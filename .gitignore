@@ -1,0 +1,9 @@
+# Dependencies & system files
+.DS_Store
+Thumbs.db
+*.log
+
+# Personal files & downloads
+*.pdf
+profile-*.json
+*.tmp

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Profil kamu - Skillsy</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <style>
+    body { min-width: 0; background: #f5f5f7; }
+    .ptoolbar {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(245, 245, 247, 0.86);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .ptitle {
+      font-weight: 700; font-size: 16px; color: #1d1d1f; flex: 1;
+      min-width: 180px; letter-spacing: -0.01em;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .psave { font-size: 11.5px; color: #6e6e73; white-space: nowrap; }
+    .psave.ok { color: #037a34; }
+
+    .pbody { max-width: 1120px; margin: 0 auto; padding: 20px 24px 110px; display: flex; gap: 20px; align-items: flex-start; }
+
+    /* navigasi kiri ala System Settings */
+    .pnav {
+      width: 230px; flex-shrink: 0; position: sticky; top: 72px;
+      background: #fff; border: 0.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px; padding: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    .pnav button {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      border: none; background: none; text-align: left; cursor: pointer;
+      padding: 9px 12px; border-radius: 8px; font-size: 13px; color: #1d1d1f;
+      font-family: inherit; font-weight: 500;
+    }
+    .pnav button:hover { background: #f5f5f7; }
+    .pnav button.active { background: #0071e3; color: #fff; font-weight: 600; }
+    .pnav .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.15);
+    }
+    .pnav button.active .dot { background: rgba(255, 255, 255, 0.6); }
+    .pnav .dot.done { background: #34c759; }
+    .pnav button.active .dot.done { background: #fff; }
+    @media (max-width: 820px) {
+      .pbody { flex-direction: column; }
+      .pnav { width: 100%; position: static; display: flex; overflow-x: auto; gap: 2px; }
+      .pnav button { width: auto; white-space: nowrap; }
+    }
+
+    .pmain { flex: 1; min-width: 0; }
+    .psection { display: none; }
+    .psection.active { display: block; }
+
+    .card { background: #fff; border: 0.5px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03); }
+    .card-title { font-size: 16px; font-weight: 700; color: #1d1d1f; text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
+    .card-sub { color: #6e6e73; font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
+
+    /* halaman Mulai */
+    .hero { text-align: center; padding: 26px 20px 10px; }
+    .hero-ava {
+      width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 14px;
+      background: #eaf3ff; color: #0071e3; font-size: 26px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+    .hero p { color: #6e6e73; font-size: 13.5px; line-height: 1.6; max-width: 440px; margin: 0 auto 20px; }
+
+    /* tiga jalur isi profil: kartu terpisah berikon, bukan tombol bertumpuk */
+    .choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 4px 0 26px; }
+    .choice {
+      position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+      text-align: left; cursor: pointer; padding: 18px 16px; font-family: inherit;
+      background: #fff; border: 0.5px solid rgba(0, 0, 0, 0.1); border-radius: 14px;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+    }
+    .choice:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); transform: translateY(-1px); }
+    .choice:focus-visible, .choice:focus { outline: none; border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18); }
+    .choice .c-ico {
+      width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #f5f5f7; color: #1d1d1f;
+    }
+    .choice .c-ico svg { width: 22px; height: 22px; }
+    .choice.primary { border-color: rgba(0, 113, 227, 0.45); }
+    .choice.primary .c-ico { background: #0071e3; color: #fff; }
+    .choice .c-title { display: block; font-size: 14.5px; font-weight: 600; color: #1d1d1f; margin-bottom: 3px; }
+    .choice .c-desc { display: block; font-size: 12.5px; color: #6e6e73; line-height: 1.45; }
+    .choice .c-chip {
+      position: absolute; top: 12px; right: 12px;
+      font-size: 10.5px; font-weight: 600; color: #0071e3;
+      background: #eaf3ff; border-radius: 980px; padding: 3px 9px;
+    }
+    @media (max-width: 860px) { .choice-grid { grid-template-columns: 1fr; } }
+
+    .pfield { display: block; margin-bottom: 14px; font-size: 12px; font-weight: 500; color: #6e6e73; }
+    .pfield input, .pfield select {
+      display: block; width: 100%; margin-top: 4px; padding: 9px 12px;
+      font-size: 13.5px; font-family: inherit; color: #1d1d1f;
+      background: #fff; border: 0.5px solid rgba(0, 0, 0, 0.12); border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .pfield input:focus, .pfield select:focus, .f-row input:focus, .f-row textarea:focus {
+      outline: none; border-color: #0071e3;
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+    }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .f-row {
+      border: 0.5px solid rgba(0, 0, 0, 0.08); border-radius: 12px;
+      padding: 14px; margin-bottom: 12px; background: #fbfbfd;
+    }
+    .f-row input, .f-row textarea {
+      display: block; width: 100%; box-sizing: border-box;
+      padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1d1d1f;
+      background: #fff; border: 0.5px solid rgba(0, 0, 0, 0.12); border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .f-row textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+    .f-row .f-del { margin-top: 2px; }
+    .f-add { margin-top: 4px; }
+    .pempty { color: #86868b; font-size: 13px; margin: 0 0 10px; }
+
+    .pstatus {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1d1d1f; color: #fff; border-radius: 980px; padding: 11px 20px;
+      font-size: 12.5px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      display: none; max-width: 90vw; z-index: 30;
+    }
+    .pstatus.show { display: block; }
+    .pstatus.error { background: #d70015; }
+
+    /* mode wawancara */
+    .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 210px); min-height: 420px; }
+    .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .chat-progress { font-size: 12px; font-weight: 600; color: #0071e3; }
+    .chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+    .q, .a, .sys {
+      max-width: 80%; padding: 10px 14px; border-radius: 16px;
+      font-size: 13.5px; line-height: 1.55; white-space: pre-wrap;
+    }
+    .q { align-self: flex-start; background: #f5f5f7; color: #1d1d1f; border-bottom-left-radius: 4px; }
+    .a { align-self: flex-end; background: #0071e3; color: #fff; border-bottom-right-radius: 4px; }
+    .sys { align-self: center; background: #e8f5ee; color: #037a34; font-size: 12.5px; }
+    .chat-input-row { display: flex; gap: 8px; margin-top: 12px; align-items: flex-end; }
+    #chat-input {
+      flex: 1; resize: none; min-height: 44px; max-height: 150px;
+      padding: 10px 12px; font-size: 13.5px; font-family: inherit;
+      border: 0.5px solid rgba(0, 0, 0, 0.12); border-radius: 12px;
+    }
+    #chat-input:focus { outline: none; border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18); }
+    .chat-meta { font-size: 11.5px; color: #86868b; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="ptoolbar">
+    <div class="ptitle" id="p-title">Profil kamu</div>
+    <span class="psave" id="p-save">Belum ada perubahan</span>
+    <button id="p-import" class="btn">Impor dari CV (PDF)</button>
+    <input type="file" id="p-import-file" accept=".pdf,application/pdf" hidden>
+    <button id="p-save-btn" class="btn primary">Simpan</button>
+  </div>
+
+  <div class="pbody">
+    <nav class="pnav" id="pnav">
+      <button data-sec="start"><span class="dot"></span>Mulai</button>
+      <button data-sec="chat"><span class="dot"></span>Ngobrol</button>
+      <button data-sec="basics"><span class="dot"></span>Data diri</button>
+      <button data-sec="exp"><span class="dot"></span>Pengalaman</button>
+      <button data-sec="edu"><span class="dot"></span>Pendidikan</button>
+      <button data-sec="proj"><span class="dot"></span>Proyek</button>
+      <button data-sec="skill"><span class="dot"></span>Skills</button>
+      <button data-sec="other"><span class="dot"></span>Lainnya</button>
+    </nav>
+
+    <main class="pmain">
+      <section class="psection" id="sec-start">
+        <div class="card hero">
+          <div class="hero-ava" id="hero-ava">?</div>
+          <h1>Profil kamu, tanpa drama</h1>
+          <p>
+            Pilih cara paling nyaman buat kamu. Tidak perlu lengkap:
+            nama dan satu pengalaman saja sudah cukup untuk mulai,
+            sisanya bisa ditambah kapan saja.
+          </p>
+          <div class="choice-grid">
+            <button class="choice primary" id="p-start-chat">
+              <span class="c-chip">Paling santai</span>
+              <span class="c-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+              </span>
+              <span>
+                <span class="c-title">Ngobrol sama Feast</span>
+                <span class="c-desc">Aku tanya satu-satu, kamu jawab santai aja. Kayak chat biasa.</span>
+              </span>
+            </button>
+            <button class="choice" id="p-import-2">
+              <span class="c-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="12" y1="18" x2="12" y2="12"/>
+                  <polyline points="9 15 12 18 15 15"/>
+                </svg>
+              </span>
+              <span>
+                <span class="c-title">Impor dari CV</span>
+                <span class="c-desc">Sudah punya CV? Unggah PDF-nya, aku baca sendiri isinya.</span>
+              </span>
+            </button>
+            <button class="choice" id="p-start-manual">
+              <span class="c-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="2"/>
+                  <line x1="8" y1="8" x2="16" y2="8"/>
+                  <line x1="8" y1="12" x2="16" y2="12"/>
+                  <line x1="8" y1="16" x2="12" y2="16"/>
+                </svg>
+              </span>
+              <span>
+                <span class="c-title">Isi sendiri</span>
+                <span class="c-desc">Form rapi per bagian. Kamu yang pegang kendali penuh.</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-chat">
+        <div class="card">
+          <div class="card-title">Ngobrol sama Feast</div>
+          <p class="card-sub">Santai aja, kayak chat dengan teman. Ada yang nggak mau dijawab? Ketik "lewati" atau klik tombolnya.</p>
+          <div class="chat-wrap">
+            <div class="chat-head">
+              <span class="chat-progress" id="chat-progress">Mulai ngobrol</span>
+              <button class="btn small" id="chat-reset">Ulangi</button>
+            </div>
+            <div class="chat-log" id="chat-log"></div>
+            <div class="chat-input-row">
+              <textarea id="chat-input" rows="1" placeholder="Ketik jawabanmu..."></textarea>
+              <button class="btn primary" id="chat-send">Kirim</button>
+              <button class="btn" id="chat-skip">Lewati</button>
+            </div>
+            <div class="chat-meta">Enter untuk kirim. Di pertanyaan panjang, tombol Kirim yang mengirim.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-basics">
+        <div class="card">
+          <div class="card-title">Data diri</div>
+          <p class="card-sub">Identitas yang muncul di kepala CV dan cover letter.</p>
+          <label class="pfield">Nama lengkap <input id="f-name" type="text" placeholder="Wajib diisi"></label>
+          <label class="pfield">Headline <input id="f-headline" type="text" placeholder="cth: Data Analyst"></label>
+          <div class="pair">
+            <label class="pfield">Email <input id="f-email" type="text"></label>
+            <label class="pfield">Telepon <input id="f-phone" type="text"></label>
+          </div>
+          <label class="pfield">Lokasi <input id="f-location" type="text" placeholder="cth: South Jakarta"></label>
+          <div class="pair">
+            <label class="pfield">LinkedIn <input id="f-linkedin" type="text" placeholder="URL"></label>
+            <label class="pfield">GitHub <input id="f-github" type="text" placeholder="URL"></label>
+          </div>
+          <label class="pfield" style="margin-bottom:0">Portfolio <input id="f-portfolio" type="text" placeholder="URL"></label>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-exp">
+        <div class="card">
+          <div class="card-title">Pengalaman kerja</div>
+          <p class="card-sub">Mulai dari yang paling relevan. Pencapaian ditulis satu per baris, yang ada angkanya paling kuat.</p>
+          <div id="f-exp-list"></div>
+          <p class="pempty hidden" id="exp-empty">Belum ada pengalaman. Klik tombol di bawah untuk menambah yang pertama.</p>
+          <button class="btn f-add" data-list="exp">Tambah pengalaman</button>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-edu">
+        <div class="card">
+          <div class="card-title">Pendidikan</div>
+          <p class="card-sub">Cukup pendidikan tertinggi yang paling relevan.</p>
+          <div id="f-edu-list"></div>
+          <p class="pempty hidden" id="edu-empty">Belum ada pendidikan.</p>
+          <button class="btn f-add" data-list="edu">Tambah pendidikan</button>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-proj">
+        <div class="card">
+          <div class="card-title">Proyek</div>
+          <p class="card-sub">Proyek, riset, atau kompetisi yang memperkuat posisi kamu. Opsional.</p>
+          <div id="f-proj-list"></div>
+          <p class="pempty hidden" id="proj-empty">Belum ada proyek. Opsional kok, bisa dilewati.</p>
+          <button class="btn f-add" data-list="proj">Tambah proyek</button>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-skill">
+        <div class="card">
+          <div class="card-title">Skills</div>
+          <p class="card-sub">Satu kategori per baris, item dipisah koma. Hanya tulis yang benar-benar kamu kuasai, AI tidak akan mengarang di luar ini.</p>
+          <div id="f-skill-list"></div>
+          <p class="pempty hidden" id="skill-empty">Belum ada skill.</p>
+          <button class="btn f-add" data-list="skill">Tambah kategori skill</button>
+        </div>
+      </section>
+
+      <section class="psection" id="sec-other">
+        <div class="card">
+          <div class="card-title">Lainnya</div>
+          <p class="card-sub">Sertifikasi, bahasa, dan preferensi tulisan. Semua opsional.</p>
+          <label class="pfield">Sertifikasi (pisah koma) <input id="f-cert" type="text"></label>
+          <label class="pfield">Bahasa (pisah koma) <input id="f-lang" type="text" placeholder="cth: English (Professional), Indonesian (Native)"></label>
+          <label class="pfield">Tone default
+            <select id="f-tone">
+              <option value="professional">Professional</option>
+              <option value="warm">Warm / human</option>
+            </select>
+          </label>
+          <label class="pfield" style="margin-bottom:0">Jangan sebutkan <input id="f-avoid" type="text" placeholder="cth: gaji, proyek X"></label>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="p-toast" class="pstatus"></div>
+
+  <script src="../lib/pdf.min.js"></script>
+  <script src="prompts.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>

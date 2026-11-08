@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Skillsy</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Skillsy<span>.</span></div>
+    <div class="brand-sub">Career Copilot - CV &amp; cover letter 1 halaman</div>
+    <nav class="tabs">
+      <button data-tab="generate" class="tab active">Generate</button>
+      <button data-tab="profile" class="tab">Profil</button>
+      <button data-tab="history" class="tab">Riwayat</button>
+      <button data-tab="settings" class="tab">Settings</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ GENERATE ============ -->
+    <section id="tab-generate" class="panel active">
+      <div id="no-profile-banner" class="banner hidden">
+        Profil belum diatur. <a href="#" id="goto-profile">Atur sekarang</a> (isi sekali saja).
+      </div>
+
+      <div id="gen-profile-strip" class="profile-strip hidden">
+        <div class="profile-strip-left">
+          <span class="p-dot"></span>
+          <span id="strip-text">Profil aktif: -</span>
+        </div>
+        <button id="strip-btn" class="strip-link">Ubah</button>
+      </div>
+
+      <!-- Langkah 1: Lowongan -->
+      <div class="card flow-card">
+        <div class="flow-header">
+          <span class="step-num">1</span>
+          <span class="flow-title">Lowongan Target</span>
+        </div>
+        <button id="btn-grab" class="btn primary block">Ambil dari tab LinkedIn ini</button>
+
+        <div id="job-info" class="job-card-compact hidden">
+          <div class="job-card-top">
+            <div id="job-title" class="job-title-highlight"></div>
+            <div id="job-meta" class="job-meta-line"></div>
+          </div>
+          <details class="job-desc-fold">
+            <summary id="job-desc-summary">Lihat teks lowongan (<span id="job-char-count">0</span> karakter)</summary>
+            <div id="job-desc" class="job-desc-content"></div>
+          </details>
+          <button id="btn-desc-more" class="btn small link hidden">Lihat deskripsi lengkap</button>
+        </div>
+      </div>
+
+      <!-- Langkah 2: Buat Dokumen -->
+      <div class="card flow-card">
+        <div class="flow-header">
+          <span class="step-num">2</span>
+          <span class="flow-title">Buat Dokumen</span>
+        </div>
+        <button id="btn-generate" class="btn primary block big">Buat CV &amp; Cover Letter</button>
+        <div id="status" class="status hidden"></div>
+
+        <details class="adv-options">
+          <summary class="adv-summary">Opsi lanjutan (<span id="adv-summary-text">English</span>)</summary>
+          <div class="adv-content">
+            <label class="field">Model AI
+              <select id="sel-model"></select>
+            </label>
+            <label class="field">Bahasa output
+              <select id="sel-lang">
+                <option value="English">English</option>
+                <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+              </select>
+            </label>
+          </div>
+        </details>
+      </div>
+
+      <!-- Hasil Dokumen -->
+      <div id="result" class="card result-card hidden">
+        <div class="result-header">
+          <div class="flow-header">
+            <span class="step-num check">&#10003;</span>
+            <span class="flow-title">Dokumen Siap</span>
+          </div>
+          <div class="result-sub-hint">Disusun khusus berdasarkan profil kamu dan lowongan ini.</div>
+        </div>
+
+        <div id="flags" class="flags hidden"></div>
+
+        <!-- Tombol Aksi Utama yang Sangat Jelas -->
+        <button class="btn primary block big open-viewer" data-doc="cv">
+          Buka di Editor Layar Penuh
+        </button>
+        <div class="result-viewer-hint">Baca dengan nyaman, edit langsung, atau revisi kalimat dengan AI.</div>
+
+        <!-- Pemilih Template Desain CV -->
+        <div class="result-template-bar">
+          <span class="result-tpl-label">Desain Template:</span>
+          <div class="seg" id="sp-tpl-seg">
+            <button type="button" data-tpl="modern" class="active" title="Modern Sans">Modern</button>
+            <button type="button" data-tpl="classic" title="Classic Harvard Serif">Classic</button>
+            <button type="button" data-tpl="compact" title="Compact High-Density">Compact</button>
+          </div>
+        </div>
+
+        <div class="subtabs-wrap">
+          <div class="subtabs">
+            <button data-sub="cv" class="subtab active">Preview CV</button>
+            <button data-sub="cl" class="subtab">Preview Cover Letter</button>
+            <button data-sub="note" class="subtab">Pesan HR (DM)</button>
+          </div>
+        </div>
+
+        <div id="sub-cv" class="sub active">
+          <div class="actions">
+            <button id="btn-dl-cv" class="btn">Download PDF</button>
+            <button id="btn-copy-cv" class="btn">Copy teks</button>
+          </div>
+          <div class="preview-scroll fit-wrap">
+            <div class="fit-inner">
+              <div id="cv-preview" class="tcv-cv" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="sub-cl" class="sub">
+          <div class="actions">
+            <button id="btn-dl-cl" class="btn">Download PDF</button>
+            <button id="btn-copy-cl" class="btn">Copy teks</button>
+          </div>
+          <div class="preview-scroll fit-wrap">
+            <div class="fit-inner">
+              <div id="cl-preview" class="tcv-cl" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="sub-note" class="sub">
+          <div class="actions">
+            <button id="btn-copy-note" class="btn primary">Copy pesan</button>
+          </div>
+          <div class="note-card">
+            <div class="note-guide">
+              Pesan perkenalan singkat untuk LinkedIn Connection Note, InMail, atau pengantar Easy Apply (&lt; 300 karakter).
+            </div>
+            <div id="recruiter-text" class="recruiter-box" contenteditable="true" spellcheck="false"></div>
+            <div id="note-count-wrap" class="note-counter">
+              <span id="note-chars">0</span> / 300 karakter
+            </div>
+          </div>
+        </div>
+
+        <div id="notes" class="notes hidden"></div>
+      </div>
+    </section>
+
+    <!-- ============ PROFILE ============ -->
+    <section id="tab-profile" class="panel">
+      <!-- Tampilan saat profil sudah ada -->
+      <div id="profile-active" class="card profile-id-card hidden">
+        <div class="flow-header">
+          <span class="step-num check">&#10003;</span>
+          <span class="flow-title">Profil Aktif</span>
+        </div>
+
+        <div class="p-card-top">
+          <div class="pavatar" id="p-initial">D</div>
+          <div class="p-info">
+            <div id="p-name" class="pname">-</div>
+            <div id="p-headline" class="pheadline"></div>
+          </div>
+        </div>
+
+        <div class="p-badges" id="p-badges">
+          <span class="p-badge" id="badge-exp">0 Pengalaman</span>
+          <span class="p-badge" id="badge-proj">0 Proyek</span>
+          <span class="p-badge" id="badge-skills">0 Skill</span>
+          <span class="p-badge" id="badge-edu">0 Pendidikan</span>
+        </div>
+
+        <button id="btn-open-editor" class="btn primary block big">Buka Editor Profil (Layar Penuh)</button>
+        <div class="p-footer-hint">Sunting data diri, tambah pencapaian, atau coba mode Wawancara interaktif.</div>
+
+        <div class="p-sub-actions">
+          <button id="btn-export-quick" class="btn small">Ekspor JSON</button>
+        </div>
+      </div>
+
+      <!-- Tampilan saat profil masih kosong -->
+      <div id="profile-empty" class="card profile-empty-card">
+        <div class="flow-header">
+          <span class="step-num">1</span>
+          <span class="flow-title">Profil Belum Dibuat</span>
+        </div>
+        <p class="hint">Profil adalah data tunggal yang dipakai AI saat menyusun CV dan cover letter. Cukup buat sekali saja.</p>
+        <button id="btn-open-editor-empty" class="btn primary block big">Mulai Buat Profil (Rekomendasi)</button>
+        <div class="empty-sub-hint">Pilih cara ternyamanmu: Wawancara santai, impor PDF, atau isi manual.</div>
+      </div>
+
+      <!-- Opsi Impor / Ganti CV (Fold rapi agar tidak mengganggu profil yang sudah aktif) -->
+      <details id="reimport-details" class="card reimport-card">
+        <summary class="reimport-summary">Impor ulang dari file CV (PDF atau teks)</summary>
+        <div class="reimport-body">
+          <p class="hint">Unggah file CV atau tempel teksnya untuk memperbarui data profil secara otomatis. Semua proses berjalan lokal.</p>
+          <input type="file" id="file-cv" accept=".pdf,application/pdf" hidden>
+          <label for="file-cv" class="btn block filebtn" id="file-cv-label">Pilih file CV (PDF)</label>
+          <textarea id="raw-text" rows="3" placeholder="Atau tempel isi CV di sini..."></textarea>
+          <button id="btn-parse" class="btn primary block">Baca dan perbarui profil</button>
+          <div id="parse-status" class="status hidden"></div>
+        </div>
+      </details>
+
+      <details id="adv-profile" class="adv">
+        <summary>Opsi teknis: lihat dan edit data profil mentah</summary>
+        <div class="card">
+          <div class="card-title">Data profil (JSON)</div>
+          <p class="hint">Untuk pengguna teknis. Format mentah yang tersimpan di browser lokal.</p>
+          <textarea id="profile-json" rows="14" class="mono" placeholder="Profil akan muncul di sini setelah CV dibaca"></textarea>
+          <div class="actions">
+            <button id="btn-save-profile" class="btn primary">Simpan</button>
+            <button id="btn-export-profile" class="btn">Export</button>
+            <label class="btn file-label">Import
+              <input type="file" id="file-import" accept=".json,application/json" hidden>
+            </label>
+          </div>
+          <p class="hint" id="profile-meta"></p>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ HISTORY ============ -->
+    <section id="tab-history" class="panel">
+      <!-- 1. Daftar Riwayat Lamaran -->
+      <div id="hist-list-view" class="card history-card-wrap">
+        <div class="flow-header">
+          <span class="flow-title">Riwayat Lamaran</span>
+          <span id="history-count" class="history-count-badge">0</span>
+        </div>
+        <p class="hint">Tersimpan otomatis di browser kamu (100 terakhir).</p>
+
+        <div class="history-toolbar">
+          <div class="history-search-wrap">
+            <input type="text" id="history-search" placeholder="Cari posisi atau perusahaan..." autocomplete="off" spellcheck="false">
+            <button type="button" id="btn-clear-search" class="history-search-clear hidden" title="Hapus pencarian">&times;</button>
+          </div>
+          <select id="history-sort" class="history-sort-select" title="Urutkan tanggal">
+            <option value="newest">Terbaru</option>
+            <option value="oldest">Terlama</option>
+          </select>
+        </div>
+
+        <div class="history-filter-bar" id="history-filter-bar">
+          <button type="button" class="h-filter-btn active" data-filter="all">Semua</button>
+          <button type="button" class="h-filter-btn" data-filter="Tersimpan">Tersimpan</button>
+          <button type="button" class="h-filter-btn" data-filter="Terkirim">Terkirim</button>
+          <button type="button" class="h-filter-btn" data-filter="Interview">Interview</button>
+          <button type="button" class="h-filter-btn" data-filter="Diterima">Diterima</button>
+          <button type="button" class="h-filter-btn" data-filter="Ditolak">Ditolak</button>
+        </div>
+
+        <div id="history-list" class="history-list"><p class="hint">Belum ada riwayat.</p></div>
+        <button id="btn-clear-history" class="btn link-danger block">Hapus semua riwayat</button>
+      </div>
+
+      <!-- 2. Detail Riwayat Lamaran (In-Situ di Sidepanel) -->
+      <div id="hist-detail-view" class="card history-detail-card hidden">
+        <div class="hist-detail-nav">
+          <button type="button" id="btn-hist-back" class="btn small hist-back-btn">
+            &larr; Kembali ke Daftar
+          </button>
+          <div class="hist-detail-status-wrap">
+            <select id="hist-det-status-sel" class="status-select" title="Ubah status lamaran">
+              <option value="Tersimpan">Tersimpan</option>
+              <option value="Terkirim">Terkirim</option>
+              <option value="Interview">Interview</option>
+              <option value="Diterima">Diterima</option>
+              <option value="Ditolak">Ditolak</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="hist-detail-header">
+          <div id="hist-det-title" class="hist-det-title">-</div>
+          <div class="hist-det-meta">
+            <span id="hist-det-company" class="hist-det-company">-</span>
+            <span class="hist-det-sep">&middot;</span>
+            <span id="hist-det-date" class="hist-det-date">-</span>
+            <span class="hist-det-sep">&middot;</span>
+            <a id="hist-det-joblink" href="#" target="_blank" rel="noopener noreferrer" class="hist-det-link">Buka di LinkedIn &#8599;</a>
+          </div>
+        </div>
+
+        <button type="button" id="btn-hist-open-viewer" class="btn primary block big">
+          Buka di Editor Layar Penuh
+        </button>
+        <div class="result-viewer-hint">Baca dengan luas, edit langsung, atau revisi kalimat dengan AI.</div>
+
+        <div class="result-template-bar">
+          <span class="result-tpl-label">Desain Template:</span>
+          <div class="seg" id="hist-tpl-seg">
+            <button type="button" data-tpl="modern" class="active" title="Modern Sans">Modern</button>
+            <button type="button" data-tpl="classic" title="Classic Harvard Serif">Classic</button>
+            <button type="button" data-tpl="compact" title="Compact High-Density">Compact</button>
+          </div>
+        </div>
+
+        <div class="subtabs-wrap">
+          <div class="subtabs" id="hist-subtabs">
+            <button type="button" data-hsub="cv" class="subtab active">Preview CV</button>
+            <button type="button" data-hsub="cl" class="subtab">Preview Cover Letter</button>
+            <button type="button" data-hsub="note" class="subtab">Pesan HR (DM)</button>
+          </div>
+        </div>
+
+        <div id="hist-sub-cv" class="hist-sub-panel active">
+          <div class="actions">
+            <button type="button" id="btn-hist-dl-cv" class="btn">Download PDF</button>
+            <button type="button" id="btn-hist-copy-cv" class="btn">Copy teks</button>
+          </div>
+          <div class="preview-scroll fit-wrap">
+            <div class="fit-inner">
+              <div id="hist-cv-preview" class="tcv-cv" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="hist-sub-cl" class="hist-sub-panel hidden">
+          <div class="actions">
+            <button type="button" id="btn-hist-dl-cl" class="btn">Download PDF</button>
+            <button type="button" id="btn-hist-copy-cl" class="btn">Copy teks</button>
+          </div>
+          <div class="preview-scroll fit-wrap">
+            <div class="fit-inner">
+              <div id="hist-cl-preview" class="tcv-cl" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="hist-sub-note" class="hist-sub-panel hidden">
+          <div class="actions">
+            <button type="button" id="btn-hist-copy-note" class="btn primary">Copy pesan</button>
+          </div>
+          <div class="note-card">
+            <div class="note-guide">
+              Pesan perkenalan singkat untuk LinkedIn Connection Note, InMail, atau pengantar Easy Apply (&lt; 300 karakter).
+            </div>
+            <div id="hist-note-text" class="recruiter-box" contenteditable="true" spellcheck="false"></div>
+            <div id="hist-note-count-wrap" class="note-counter">
+              <span id="hist-note-chars">0</span> / 300 karakter
+            </div>
+          </div>
+        </div>
+
+        <div id="hist-tailoring-notes" class="notes hidden"></div>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section id="tab-settings" class="panel">
+
+      <!-- Card 1: Groq API Key -->
+      <div class="card">
+        <div class="card-header-row">
+          <div class="card-title">Groq API Key</div>
+          <span id="api-key-badge" class="badge-pill warn">Belum Disetel</span>
+        </div>
+        <p class="hint">
+          Key disimpan <b>hanya di browser kamu</b> (BYOK) dan dipanggil langsung ke
+          api.groq.com. Buat key gratis di
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a>.
+        </p>
+
+        <div class="key-input-wrap">
+          <input type="password" id="inp-key" placeholder="gsk_..." class="block" spellcheck="false" autocomplete="off">
+          <div class="key-input-actions">
+            <button type="button" id="btn-clear-key" class="btn-clear-circle hidden" title="Hapus teks">&times;</button>
+            <button type="button" id="btn-toggle-key" class="btn-key-toggle" title="Lihat/Tutup">Lihat</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btn-save-key" class="btn primary">Simpan &amp; Verifikasi</button>
+          <button id="btn-test-key" class="btn hidden">Test Ulang</button>
+        </div>
+
+        <div id="key-status" class="status hidden"></div>
+
+        <div class="security-callout">
+          <div class="sec-callout-title">Keamanan &amp; Privasi API Key</div>
+          <p class="sec-callout-desc">
+            Skillsy tidak mempunyai server perantara penampung key. Jangan pernah menyertakan API key di screenshot publik atau commit Git.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2: Preferensi AI & Dokumen -->
+      <div class="card">
+        <div class="card-title">Preferensi AI &amp; Dokumen</div>
+        <p class="hint">Pengaturan default untuk proses pembuatan CV dan cover letter.</p>
+
+        <label class="field">Model AI Default
+          <select id="stg-model"></select>
+        </label>
+        <div class="stg-sub-action">
+          <button type="button" id="btn-refresh-models-stg" class="btn-text-link">Perbarui daftar model dari Groq</button>
+        </div>
+
+        <div class="field-label-spaced">Bahasa Dokumen Default</div>
+        <div class="seg seg-full" id="stg-lang-seg">
+          <button type="button" data-lang="Bahasa Indonesia">Bahasa Indonesia</button>
+          <button type="button" data-lang="English" class="active">English</button>
+        </div>
+
+        <div class="field-label-spaced">Desain Template CV Default</div>
+        <div class="seg seg-full" id="stg-tpl-seg">
+          <button type="button" data-tpl="modern" class="active">Modern</button>
+          <button type="button" data-tpl="classic">Classic</button>
+          <button type="button" data-tpl="compact">Compact</button>
+        </div>
+      </div>
+
+      <!-- Card 3: Data & Penyimpanan Lokal -->
+      <div class="card">
+        <div class="card-title">Data &amp; Penyimpanan Lokal</div>
+        <p class="hint">
+          Semua data tersimpan secara offline di browser kamu (Local-first). Tidak ada cloud server pihak ketiga.
+        </p>
+
+        <div class="settings-list">
+          <div class="settings-item">
+            <span class="settings-item-label">Profil tersimpan</span>
+            <span class="settings-item-val" id="stg-stat-profile">-</span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-label">Riwayat lamaran</span>
+            <span class="settings-item-val" id="stg-stat-history">0 lowongan</span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-item-label">Status privasi</span>
+            <span class="settings-item-val text-ok">100% lokal di browser</span>
+          </div>
+        </div>
+
+        <div class="actions vertical">
+          <button id="btn-backup-data" class="btn block">Download Cadangan Profil (JSON)</button>
+          <button id="btn-clear-history-stg" class="btn danger-subtle block">Hapus Riwayat Lamaran Saja</button>
+          <button id="btn-reset-all" class="btn danger block">Reset Total Semua Data Skillsy</button>
+        </div>
+      </div>
+
+      <!-- Card 4: Tentang Skillsy -->
+      <div class="about-card">
+        <div class="about-top">
+          <span class="about-name">Skillsy</span>
+          <span class="about-badge">v0.8.0</span>
+        </div>
+        <div class="about-tagline">Local-first AI Career Copilot</div>
+        <div class="about-pills">
+          <span class="about-pill">Jujur &amp; Anti Halusinasi</span>
+          <span class="about-pill">Garansi 1 Halaman A4</span>
+          <span class="about-pill">Apple HIG System</span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="../lib/pdf.min.js"></script>
+  <script src="../lib/html2pdf.bundle.min.js"></script>
+  <script src="prompts.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

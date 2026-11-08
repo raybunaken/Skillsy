@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Skillsy - AI Career Copilot",
+  "version": "0.8.0",
+  "description": "Baca lowongan dari halaman LinkedIn yang kamu buka, lalu generate CV & cover letter yang dipersonalisasi dari profil dasar kamu - jujur, tanpa mengarang. Output PDF 1 halaman A4, semua data lokal.",
+  "permissions": ["storage", "unlimitedStorage", "downloads", "sidePanel", "scripting"],
+  "host_permissions": ["https://*.linkedin.com/*", "https://api.groq.com/*"],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "scripts": ["background/service-worker.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "copilot@skillsy.my.id",
+      "strict_min_version": "121.0"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.linkedin.com/*"],
+      "js": ["content/linkedin.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "sidebar_action": {
+    "default_title": "Skillsy",
+    "default_panel": "sidepanel/sidepanel.html"
+  },
+  "action": {
+    "default_title": "Buka Skillsy"
+  }
+}
