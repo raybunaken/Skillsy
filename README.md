@@ -1,56 +1,176 @@
-# Skillsy - AI Career Copilot
+<div align="center">
 
-Skillsy is a local-first browser extension (Manifest V3) that analyzes job postings against your profile, evaluates your skill fit, and generates tailored single-page A4 resumes and authentic cover letters in PDF format.
+<img src="assets/logo.svg" alt="Skillsy Logo" width="88" height="88" />
 
-Official Website: [skillsy.my.id](https://skillsy.my.id)
+# Skillsy
 
----
+### Client-Side AI Career Copilot for LinkedIn and Job Boards
 
-## Key Features
+A local-first browser extension (Manifest V3) that parses job postings directly from active tabs, scores your skill compatibility deterministically, and generates tailored single-page A4 PDF resumes and authentic cover letters.
 
-- **DOM-Based Job Parsing:** One-click extraction of job title, company, requirements, and responsibilities directly from active job tabs.
-- **Deterministic Match Scoring:** Evaluates experience alignment, required skills, and competencies against explicit job criteria.
-- **Single-Page A4 PDF Resume:** Produces clean, professional, ATS-friendly resumes rendered client-side.
-- **Role-Specific Cover Letters:** Generates concise, customized cover letters without generic filler.
-- **Local Application Tracking:** Saves, tracks, and manages your job application history directly in your browser.
-- **Bring Your Own Key (BYOK):** Direct inference calls from browser to AI providers (Groq, Qwen, or OpenAI-compatible endpoints).
+[Website](https://skillsy.my.id) | [Download ZIP](https://skillsy.my.id/skillsy-extension.zip) | [Quick Setup](#installation) | [Architecture](#architecture) | [Security](#privacy-and-security-guarantees)
 
----
+<br/>
 
-## Installation Guide (Chrome, Brave, Edge)
+[![Version](https://img.shields.io/badge/version-0.8.0-00DC82.svg?style=flat-square)](https://github.com/raybunaken/Skillsy)
+[![Manifest](https://img.shields.io/badge/manifest-v3-0284c7.svg?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Brave%20%7C%20Edge-f97316.svg?style=flat-square)](https://skillsy.my.id)
+[![Architecture](https://img.shields.io/badge/architecture-Local--First%20%2F%20BYOK-8b5cf6.svg?style=flat-square)](https://skillsy.my.id)
+[![Inference](https://img.shields.io/badge/inference-Groq%20%7C%20Qwen-10b981.svg?style=flat-square)](https://console.groq.com)
+[![License](https://img.shields.io/badge/license-MIT-64748b.svg?style=flat-square)](LICENSE)
 
-1. Clone or download this repository:
-   ```bash
-   git clone https://github.com/raybunaken/skillsy.git
-   ```
-   *(Or click **Code > Download ZIP** and extract the folder).*
+</div>
 
-2. Open your browser and go to `chrome://extensions` or `brave://extensions`.
-3. Enable the **Developer mode** toggle in the top-right corner.
-4. Click **Load unpacked** and select the `skillsy` folder.
-5. The Skillsy icon will appear in your extensions toolbar. Click it to open the side panel.
+<br/>
 
----
+## Overview
 
-## Quick Configuration
+Most AI resume builders operate as centralized SaaS applications: your employment history and personal contact details are stored in remote databases, and generated outputs frequently fabricate metrics or produce multi-page formats that break Applicant Tracking Systems (ATS).
 
-1. Open the Skillsy side panel.
-2. Go to the **Settings** tab.
-3. Enter your AI API key:
-   - **Groq:** Free API key from [console.groq.com/keys](https://console.groq.com/keys).
-   - **Alibaba Cloud Model Studio (Qwen):** Via Alibaba Cloud DashScope console.
-4. Click **Simpan Pengaturan**. The key is stored locally in `chrome.storage.local`.
+Skillsy takes a fundamentally different engineering approach:
+
+- **Local Execution:** PDF parsing, DOM inspection, and profile storage happen entirely inside your browser runtime.
+- **Strict Anti-Fabrication Engine:** The prompt engineering pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
+- **Deterministic 1-Page Layout:** CV generation produces a standardized single-page A4 PDF rendered directly via client-side Canvas and html2pdf.
+- **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Groq, Qwen, or any OpenAI-compatible API) with zero intermediary proxy servers.
 
 ---
 
-## Privacy by Design
+## Skillsy vs Generic AI Resume Builders
+
+| Feature | Generic Resume Builders | Skillsy |
+| :--- | :--- | :--- |
+| **Privacy Model** | Uploads CV to external database | 100% Client-side local storage |
+| **Hallucination Control** | High risk of fabricating metrics | Strict anti-fabrication prompt guards |
+| **Document Format** | Often overflows onto multi-page PDF | Fixed 1-page A4 PDF standard |
+| **Cost / Access** | $20 to $50 monthly recurring subscription | Free and open source (BYOK) |
+| **Data Retention** | User data retained for model training | Zero telemetry, zero cloud retention |
+| **Workflow** | Copy-pasting between tabs | Native browser sidepanel alongside jobs |
+
+---
+
+## Core Capabilities
+
+- **One-Click DOM Extraction:** Reads role titles, company names, job descriptions, and qualification requirements directly from LinkedIn tabs without scraping account credentials.
+- **Deterministic Match Scoring:** Calculates alignment based on hard requirements, core skill taxonomy, and years of experience.
+- **Single-Page PDF Resume Generation:** Generates clean, ATS-compliant resumes with responsive typography and professional layout.
+- **Contextual Cover Letters:** Formulates role-specific cover letters highlighting genuine qualifications without generic filler or cliches.
+- **In-Browser Job Tracking:** Built-in history management allowing users to track status (Saved, Applied, Interviewing, Rejected) locally.
+- **Multi-Model Support:** Native support for high-throughput inference providers including Groq (Llama 3.3) and Alibaba Cloud DashScope (Qwen 2.5).
+
+---
+
+## Architecture
+
+```
++------------------------------------------------------------------+
+| Browser Runtime (Chrome / Brave / Edge)                          |
+|                                                                  |
+|  +------------------------+      +----------------------------+  |
+|  | Active Job Tab (DOM)   |      | Skillsy Sidepanel UI       |  |
+|  | - LinkedIn Job Details | ---> | - Profile Manager          |  |
+|  | - Requirements & Title |      | - Match Scoring Engine     |  |
+|  +------------------------+      | - PDF Previewer & Editor   |  |
+|                                  +--------------+-------------+  |
+|                                                 |                |
+|  +----------------------------------------------+                |
+|  | Client-Side Storage: chrome.storage.local                     |
+|  | - Base Profile JSON                                           |
+|  | - Encrypted Local API Key                                     |
+|  | - Local Application History                                   |
+|  +----------------------------------------------+                |
++-------------------------------------------------|----------------+
+                                                  |
+                                                  v Direct HTTPS (BYOK)
+                                    +------------------------------+
+                                    | AI Inference Provider        |
+                                    | - Groq API (console.groq.com)|
+                                    | - Alibaba Cloud Qwen / Custom|
+                                    +------------------------------+
+                                                  |
+                                                  v
+                                    +------------------------------+
+                                    | Single-Page A4 PDF Output    |
+                                    | (Downloads/Skillsy/)         |
+                                    +------------------------------+
+```
+
+---
+
+## Installation
+
+### Method 1: Pre-Built ZIP Package (Fastest)
+
+1. Download the latest build: [skillsy-extension.zip](https://skillsy.my.id/skillsy-extension.zip).
+2. Unpack the ZIP archive to a folder of your choice.
+3. Open your browser and navigate to:
+   - Chrome: `chrome://extensions`
+   - Brave: `brave://extensions`
+   - Edge: `edge://extensions`
+4. Toggle **Developer mode** on in the top-right corner.
+5. Click **Load unpacked** and select the unpacked directory.
+
+### Method 2: Build From Source
+
+```bash
+git clone https://github.com/raybunaken/Skillsy.git
+cd Skillsy
+```
+Load the root repository directory via your browser extensions management page.
+
+---
+
+## Configuration (BYOK)
+
+Skillsy connects directly from your browser to AI inference providers:
+
+1. Click the Skillsy icon in your browser toolbar to open the sidepanel.
+2. Select the **Settings** tab.
+3. Input your API key:
+   - **Groq (Free tier available):** Create a key at [console.groq.com/keys](https://console.groq.com/keys).
+   - **Alibaba Cloud Model Studio (Qwen):** Available via Alibaba Cloud DashScope console.
+4. Click **Simpan Pengaturan**. The key is saved locally in `chrome.storage.local`.
+
+---
+
+## Repository Structure
+
+```
+Skillsy/
+|-- manifest.json          # Manifest V3 extension configuration
+|-- background/
+|   `-- service-worker.js  # Background life-cycle and sidepanel routing
+|-- content/
+|   `-- linkedin.js        # Read-only DOM extractor for LinkedIn postings
+|-- sidepanel/
+|   |-- sidepanel.html     # Main sidepanel interface
+|   |-- sidepanel.css      # Dark-mode Apple HIG inspired UI styling
+|   |-- sidepanel.js       # Core state management and LLM dispatching
+|   |-- prompts.js         # Anti-fabrication prompt templates
+|   |-- profile.html       # Profile editor interface
+|   |-- profile.js         # Base profile controller
+|   |-- viewer.html        # Interactive A4 PDF document previewer
+|   `-- viewer.js          # Client-side PDF rendering and editing engine
+|-- lib/
+|   |-- html2pdf.bundle.min.js # Client-side PDF canvas generator
+|   |-- pdf.min.js             # Client-side PDF parser
+|   `-- pdf.worker.min.js      # Background web worker for parsing
+|-- assets/
+|   `-- logo.svg           # High-resolution brand vector
+|-- LICENSE                # MIT License
+`-- README.md              # Technical documentation
+```
+
+---
+
+## Privacy and Security Guarantees
 
 - **Zero Remote Document Storage:** Your uploaded CV text is processed in memory and stored locally in browser storage.
-- **Direct Client Calls:** API requests originate directly from your browser to the AI provider without intermediary proxy servers.
-- **Zero Tracking:** No personal resumes, job postings, or activity logs are collected.
+- **Client-Direct Calls:** API requests to Groq or DashScope originate directly from your browser runtime, not through intermediary servers.
+- **Zero Tracker Policy:** No third-party trackers, telemetry scripts, or analytics beacons.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is open-source software licensed under the [MIT License](LICENSE).
