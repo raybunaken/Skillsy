@@ -16,7 +16,7 @@ A local-first browser extension (Manifest V3) that parses job postings directly 
 [![Manifest](https://img.shields.io/badge/manifest-v3-0284c7.svg?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Brave%20%7C%20Edge-f97316.svg?style=flat-square)](https://skillsy.my.id)
 [![Architecture](https://img.shields.io/badge/architecture-Local--First%20%2F%20BYOK-8b5cf6.svg?style=flat-square)](https://skillsy.my.id)
-[![Inference](https://img.shields.io/badge/inference-Groq%20%7C%20Qwen-10b981.svg?style=flat-square)](https://console.groq.com)
+[![Inference](https://img.shields.io/badge/inference-Groq%20LPU-10b981.svg?style=flat-square)](https://console.groq.com)
 [![License](https://img.shields.io/badge/license-MIT-64748b.svg?style=flat-square)](LICENSE)
 
 </div>
@@ -33,7 +33,7 @@ Skillsy takes a local-first engineering approach:
 - **Interactive Inline Editor:** Generates live documents with full direct editing (like Word) plus a floating AI revision bubble that triggers on text selection.
 - **Strict Anti-Fabrication Engine:** The prompt pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
 - **Deterministic 1-Page Layout:** CV generation produces a standardized single-page A4 PDF rendered directly via client-side Canvas and html2pdf.
-- **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Groq, Qwen, or any OpenAI-compatible API) with zero intermediary proxy servers.
+- **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Groq or OpenAI-compatible endpoints) with zero intermediary proxy servers.
 
 ---
 
@@ -62,7 +62,7 @@ Skillsy includes a built-in document viewer and interactive editor that transfor
 - **Contextual Cover Letters:** Formulates role-specific cover letters highlighting genuine qualifications without generic filler or cliches.
 - **Multiple CV Design Templates:** Choose between clean visual layouts tailored for corporate, tech, or creative roles.
 - **In-Browser Job Tracking:** Built-in history management allowing users to track application status (Saved, Applied, Interviewing, Rejected) locally.
-- **Multi-Model Support:** Native support for high-throughput inference providers including Groq (Llama 3.3) and Alibaba Cloud DashScope (Qwen 2.5).
+- **Multi-Model Support:** High-throughput client-side inference powered by Groq (Llama 3.3 70B, Llama 3.1 8B) with an OpenAI-compatible JSON architecture.
 
 ---
 
@@ -98,7 +98,7 @@ Skillsy includes a built-in document viewer and interactive editor that transfor
                                     +------------------------------+
                                     | AI Inference Provider        |
                                     | - Groq API (console.groq.com)|
-                                    | - Alibaba Cloud Qwen / Custom|
+                                    | - OpenAI-Compatible Endpoints|
                                     +------------------------------+
                                                   |
                                                   v
@@ -142,8 +142,7 @@ Skillsy connects directly from your browser to AI inference providers:
 1. Click the Skillsy icon in your browser toolbar to open the sidepanel.
 2. Select the **Settings** tab.
 3. Input your API key:
-   - **Groq (Free tier available):** Create a key at [console.groq.com/keys](https://console.groq.com/keys).
-   - **Alibaba Cloud Model Studio (Qwen):** Available via Alibaba Cloud DashScope console.
+   - **Groq (Free):** Create an API key at [console.groq.com/keys](https://console.groq.com/keys) (includes fast access to Llama 3.3 70B Versatile).
 4. Click **Simpan Pengaturan**. The key is saved locally in `chrome.storage.local`.
 
 ### Upcoming: Managed Cloud AI (Optional Paid Plan)
@@ -188,7 +187,7 @@ Skillsy/
 ## Privacy and Security Guarantees
 
 - **Zero Remote Document Storage:** Your uploaded CV text is processed in memory and stored locally in browser storage.
-- **Client-Direct Calls:** API requests to Groq or DashScope originate directly from your browser runtime, not through intermediary servers.
+- **Client-Direct Calls:** API requests to inference providers originate directly from your browser runtime, not through intermediary servers.
 - **Zero Tracker Policy:** No third-party trackers, telemetry scripts, or analytics beacons.
 
 ---
