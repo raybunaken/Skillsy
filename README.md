@@ -16,8 +16,8 @@ A local-first browser extension (Manifest V3) that parses job postings directly 
 [![Manifest](https://img.shields.io/badge/manifest-v3-0284c7.svg?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Brave%20%7C%20Edge-f97316.svg?style=flat-square)](https://skillsy.my.id)
 [![Architecture](https://img.shields.io/badge/architecture-Local--First%20%2F%20BYOK-8b5cf6.svg?style=flat-square)](https://skillsy.my.id)
-[![Supported by](https://img.shields.io/badge/supported%20by-Alibaba%20Cloud%20AI%20Catalyst-FF6A00.svg?style=flat-square)](https://www.alibabacloud.com)
-[![Recommended Model](https://img.shields.io/badge/recommended%20model-Qwen%20(Alibaba%20Cloud)-blue.svg?style=flat-square)](https://www.alibabacloud.com)
+[![Model](https://img.shields.io/badge/model-Qwen%20(Alibaba%20Cloud)-orange.svg?style=flat-square)](https://www.alibabacloud.com)
+[![Inference](https://img.shields.io/badge/inference-Groq%20LPU-10b981.svg?style=flat-square)](https://console.groq.com)
 [![License](https://img.shields.io/badge/license-MIT-64748b.svg?style=flat-square)](LICENSE)
 
 </div>
@@ -186,10 +186,10 @@ Skillsy/
 
 ---
 
-## Acknowledgements & Infrastructure
+## Acknowledgements & Ecosystem
 
 Skillsy development and model explorations are supported by:
-- **Alibaba Cloud AI Catalyst Program:** Model Studio and Qwen foundation model infrastructure.
+- **Alibaba Cloud AI Catalyst Program:** Selected participant exploring Qwen foundation models and Model Studio.
 - **Groq:** High-throughput LPU inference acceleration for ultra-low latency document generation.
 
 ---
