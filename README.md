@@ -6,9 +6,9 @@
 
 ### Client-Side AI Career Copilot for LinkedIn and Job Boards
 
-A local-first browser extension (Manifest V3) that parses job postings directly from active tabs, scores your skill compatibility deterministically, and generates tailored single-page A4 PDF resumes and authentic cover letters.
+A local-first browser extension (Manifest V3) that parses job postings directly from active tabs, scores your skill compatibility deterministically, and generates tailored single-page A4 PDF resumes and authentic cover letters with an in-situ interactive AI editor.
 
-[Website](https://skillsy.my.id) | [Download ZIP](https://skillsy.my.id/skillsy-extension.zip) | [Quick Setup](#installation) | [Architecture](#architecture) | [Security](#privacy-and-security-guarantees)
+[Website](https://skillsy.my.id) | [Download ZIP](https://skillsy.my.id/skillsy-extension.zip) | [Quick Setup](#installation) | [Interactive Editor](#interactive-in-situ-ai-editor) | [Architecture](#architecture) | [Security](#privacy-and-security-guarantees)
 
 <br/>
 
@@ -25,11 +25,12 @@ A local-first browser extension (Manifest V3) that parses job postings directly 
 
 ## Overview
 
-Most AI resume builders operate as centralized SaaS applications: your employment history and personal contact details are stored in remote databases, and generated outputs frequently fabricate metrics or produce multi-page formats that break Applicant Tracking Systems (ATS).
+Most AI resume builders operate as centralized SaaS applications: your employment history and personal contact details are stored in remote databases, and generated outputs frequently fabricate metrics, produce rigid static templates, or output multi-page formats that break Applicant Tracking Systems (ATS).
 
 Skillsy takes a fundamentally different engineering approach:
 
 - **Local Execution:** PDF parsing, DOM inspection, and profile storage happen entirely inside your browser runtime.
+- **Interactive In-Situ AI Editor:** Generates live documents with full WYSIWYG editing (`contenteditable`) and a floating AI revision bubble that triggers on text selection.
 - **Strict Anti-Fabrication Engine:** The prompt engineering pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
 - **Deterministic 1-Page Layout:** CV generation produces a standardized single-page A4 PDF rendered directly via client-side Canvas and html2pdf.
 - **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Groq, Qwen, or any OpenAI-compatible API) with zero intermediary proxy servers.
@@ -40,6 +41,7 @@ Skillsy takes a fundamentally different engineering approach:
 
 | Feature | Generic Resume Builders | Skillsy |
 | :--- | :--- | :--- |
+| **Document Editing** | Rigid form inputs or static uneditable exports | Full in-situ WYSIWYG editor with floating AI revision bubble |
 | **Privacy Model** | Uploads CV to external database | 100% Client-side local storage |
 | **Hallucination Control** | High risk of fabricating metrics | Strict anti-fabrication prompt guards |
 | **Document Format** | Often overflows onto multi-page PDF | Fixed 1-page A4 PDF standard |
@@ -49,9 +51,27 @@ Skillsy takes a fundamentally different engineering approach:
 
 ---
 
+## Interactive In-Situ AI Editor
+
+Skillsy includes a built-in document viewer and interactive editor that transforms standard static AI outputs into a dynamic, word-processor-like experience:
+
+1. **Direct Canvas WYSIWYG Editing:** Click anywhere on the generated CV or cover letter to edit text, adjust bullet points, or fix dates directly on the A4 page with instant auto-save to local storage.
+2. **Contextual Floating AI Bubble:** Highlight any sentence, bullet, or paragraph on the preview page. A smart floating toolbar appears directly at the cursor position powered by the browser CSS Custom Highlight API.
+3. **One-Click Refinement Chips:**
+   - **Ringkas:** Tightens prose and trims unnecessary fluff.
+   - **Formal:** Converts wording into authoritative, professional corporate phrasing.
+   - **Bahasa:** Corrects grammar and syntax without altering factual meaning.
+   - **Fokus Angka:** Reframes bullet points to emphasize quantifiable achievements and metrics.
+4. **Custom Prompt Instructions:** Type specific natural language instructions (e.g., "Rephrase using the STAR method", "Emphasize Kubernetes leadership") directly into the bubble.
+5. **Side-by-Side Diff Comparison:** Inspect proposed AI revisions against the original text before choosing to Accept or Reject changes.
+6. **Multi-Bullet Structure Preservation:** Intelligently recognizes HTML list hierarchies (`<ul>`, `<li>`) so bulleted experience blocks retain clean indentation and typography.
+
+---
+
 ## Core Capabilities
 
 - **One-Click DOM Extraction:** Reads role titles, company names, job descriptions, and qualification requirements directly from LinkedIn tabs without scraping account credentials.
+- **In-Situ AI Selection Bubble:** Highlights and refines specific sentences or sections on-demand without regenerating the entire document.
 - **Deterministic Match Scoring:** Calculates alignment based on hard requirements, core skill taxonomy, and years of experience.
 - **Single-Page PDF Resume Generation:** Generates clean, ATS-compliant resumes with responsive typography and professional layout.
 - **Contextual Cover Letters:** Formulates role-specific cover letters highlighting genuine qualifications without generic filler or cliches.
@@ -70,14 +90,21 @@ Skillsy takes a fundamentally different engineering approach:
 |  | Active Job Tab (DOM)   |      | Skillsy Sidepanel UI       |  |
 |  | - LinkedIn Job Details | ---> | - Profile Manager          |  |
 |  | - Requirements & Title |      | - Match Scoring Engine     |  |
-|  +------------------------+      | - PDF Previewer & Editor   |  |
-|                                  +--------------+-------------+  |
+|  +------------------------+      +--------------+-------------+  |
+|                                                 |                |
+|  +----------------------------------------------+                |
+|  | Interactive Document Viewer & Editor                          |
+|  | - Live WYSIWYG Canvas (contenteditable)                       |
+|  | - Floating AI Selection Bubble (CSS Custom Highlights)        |
+|  | - One-Click Chips: Concise | Formal | Grammar | Metrics       |
+|  | - Side-by-Side Diff Inspector & Multi-Bullet Parser           |
+|  +----------------------------------------------+                |
 |                                                 |                |
 |  +----------------------------------------------+                |
 |  | Client-Side Storage: chrome.storage.local                     |
 |  | - Base Profile JSON                                           |
 |  | - Encrypted Local API Key                                     |
-|  | - Local Application History                                   |
+|  | - Local Application History & Auto-Saved Edits                |
 |  +----------------------------------------------+                |
 +-------------------------------------------------|----------------+
                                                   |
@@ -91,7 +118,7 @@ Skillsy takes a fundamentally different engineering approach:
                                                   v
                                     +------------------------------+
                                     | Single-Page A4 PDF Output    |
-                                    | (Downloads/Skillsy/)         |
+                                    | (html2pdf.bundle.min.js)     |
                                     +------------------------------+
 ```
 
@@ -150,7 +177,7 @@ Skillsy/
 |   |-- profile.html       # Profile editor interface
 |   |-- profile.js         # Base profile controller
 |   |-- viewer.html        # Interactive A4 PDF document previewer
-|   `-- viewer.js          # Client-side PDF rendering and editing engine
+|   `-- viewer.js          # In-situ WYSIWYG editor and floating AI selection bubble
 |-- lib/
 |   |-- html2pdf.bundle.min.js # Client-side PDF canvas generator
 |   |-- pdf.min.js             # Client-side PDF parser
