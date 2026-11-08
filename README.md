@@ -6,9 +6,9 @@
 
 ### Client-Side AI Career Copilot for LinkedIn and Job Boards
 
-A local-first browser extension (Manifest V3) that parses job postings directly from active tabs, scores your skill compatibility deterministically, and generates tailored single-page A4 PDF resumes and authentic cover letters with an in-situ interactive AI editor.
+A local-first browser extension (Manifest V3) that parses job postings directly from active tabs, generates tailored single-page A4 PDF resumes and authentic cover letters, and lets you edit or refine text in real-time with an interactive floating AI bubble.
 
-[Website](https://skillsy.my.id) | [Download ZIP](https://skillsy.my.id/skillsy-extension.zip) | [Quick Setup](#installation) | [Interactive Editor](#interactive-in-situ-ai-editor) | [Architecture](#architecture) | [Security](#privacy-and-security-guarantees)
+[Website](https://skillsy.my.id) | [Download ZIP](https://skillsy.my.id/skillsy-extension.zip) | [Quick Setup](#installation) | [Interactive Editor](#interactive-document-editor--ai-selection-bubble) | [Architecture](#architecture) | [Security](#privacy-and-security-guarantees)
 
 <br/>
 
@@ -25,38 +25,24 @@ A local-first browser extension (Manifest V3) that parses job postings directly 
 
 ## Overview
 
-Most AI resume builders operate as centralized SaaS applications: your employment history and personal contact details are stored in remote databases, and generated outputs frequently fabricate metrics, produce rigid static templates, or output multi-page formats that break Applicant Tracking Systems (ATS).
+Most AI resume tools operate as centralized SaaS applications: your full employment history and personal contact details are stored in remote databases, and generated outputs frequently fabricate metrics, produce rigid static text, or overflow onto awkward multi-page formats that break Applicant Tracking Systems (ATS).
 
-Skillsy takes a fundamentally different engineering approach:
+Skillsy takes a local-first engineering approach:
 
-- **Local Execution:** PDF parsing, DOM inspection, and profile storage happen entirely inside your browser runtime.
-- **Interactive In-Situ AI Editor:** Generates live documents with full WYSIWYG editing (`contenteditable`) and a floating AI revision bubble that triggers on text selection.
-- **Strict Anti-Fabrication Engine:** The prompt engineering pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
+- **Local Execution:** PDF parsing, DOM extraction, and profile storage happen entirely inside your browser runtime.
+- **Interactive Inline Editor:** Generates live documents with full direct editing (like Word) plus a floating AI revision bubble that triggers on text selection.
+- **Strict Anti-Fabrication Engine:** The prompt pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
 - **Deterministic 1-Page Layout:** CV generation produces a standardized single-page A4 PDF rendered directly via client-side Canvas and html2pdf.
 - **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Groq, Qwen, or any OpenAI-compatible API) with zero intermediary proxy servers.
 
 ---
 
-## Skillsy vs Generic AI Resume Builders
+## Interactive Document Editor & AI Selection Bubble
 
-| Feature | Generic Resume Builders | Skillsy |
-| :--- | :--- | :--- |
-| **Document Editing** | Rigid form inputs or static uneditable exports | Full in-situ WYSIWYG editor with floating AI revision bubble |
-| **Privacy Model** | Uploads CV to external database | 100% Client-side local storage |
-| **Hallucination Control** | High risk of fabricating metrics | Strict anti-fabrication prompt guards |
-| **Document Format** | Often overflows onto multi-page PDF | Fixed 1-page A4 PDF standard |
-| **Cost / Access** | $20 to $50 monthly recurring subscription | Free and open source (BYOK) |
-| **Data Retention** | User data retained for model training | Zero telemetry, zero cloud retention |
-| **Workflow** | Copy-pasting between tabs | Native browser sidepanel alongside jobs |
+Skillsy includes a built-in document viewer and interactive editor that transforms static AI outputs into a dynamic, word-processor-like experience:
 
----
-
-## Interactive In-Situ AI Editor
-
-Skillsy includes a built-in document viewer and interactive editor that transforms standard static AI outputs into a dynamic, word-processor-like experience:
-
-1. **Direct Canvas WYSIWYG Editing:** Click anywhere on the generated CV or cover letter to edit text, adjust bullet points, or fix dates directly on the A4 page with instant auto-save to local storage.
-2. **Contextual Floating AI Bubble:** Highlight any sentence, bullet, or paragraph on the preview page. A smart floating toolbar appears directly at the cursor position powered by the browser CSS Custom Highlight API.
+1. **Direct Canvas Editing:** Click anywhere on the generated CV or cover letter to edit text, adjust bullet points, or fix dates directly on the A4 page with instant auto-save to local storage.
+2. **Contextual Floating AI Bubble:** Highlight any sentence, bullet point, or paragraph on the preview page. A smart floating toolbar appears directly at the cursor position powered by the browser CSS Custom Highlight API.
 3. **One-Click Refinement Chips:**
    - **Ringkas:** Tightens prose and trims unnecessary fluff.
    - **Formal:** Converts wording into authoritative, professional corporate phrasing.
@@ -71,11 +57,11 @@ Skillsy includes a built-in document viewer and interactive editor that transfor
 ## Core Capabilities
 
 - **One-Click DOM Extraction:** Reads role titles, company names, job descriptions, and qualification requirements directly from LinkedIn tabs without scraping account credentials.
-- **In-Situ AI Selection Bubble:** Highlights and refines specific sentences or sections on-demand without regenerating the entire document.
-- **Deterministic Match Scoring:** Calculates alignment based on hard requirements, core skill taxonomy, and years of experience.
+- **Floating AI Selection Bubble:** Highlights and refines specific sentences or sections on-demand without regenerating the entire document.
 - **Single-Page PDF Resume Generation:** Generates clean, ATS-compliant resumes with responsive typography and professional layout.
 - **Contextual Cover Letters:** Formulates role-specific cover letters highlighting genuine qualifications without generic filler or cliches.
-- **In-Browser Job Tracking:** Built-in history management allowing users to track status (Saved, Applied, Interviewing, Rejected) locally.
+- **Multiple CV Design Templates:** Choose between clean visual layouts tailored for corporate, tech, or creative roles.
+- **In-Browser Job Tracking:** Built-in history management allowing users to track application status (Saved, Applied, Interviewing, Rejected) locally.
 - **Multi-Model Support:** Native support for high-throughput inference providers including Groq (Llama 3.3) and Alibaba Cloud DashScope (Qwen 2.5).
 
 ---
@@ -89,12 +75,12 @@ Skillsy includes a built-in document viewer and interactive editor that transfor
 |  +------------------------+      +----------------------------+  |
 |  | Active Job Tab (DOM)   |      | Skillsy Sidepanel UI       |  |
 |  | - LinkedIn Job Details | ---> | - Profile Manager          |  |
-|  | - Requirements & Title |      | - Match Scoring Engine     |  |
+|  | - Requirements & Title |      | - Document Generator       |  |
 |  +------------------------+      +--------------+-------------+  |
 |                                                 |                |
 |  +----------------------------------------------+                |
 |  | Interactive Document Viewer & Editor                          |
-|  | - Live WYSIWYG Canvas (contenteditable)                       |
+|  | - Live Document Editing (contenteditable)                     |
 |  | - Floating AI Selection Bubble (CSS Custom Highlights)        |
 |  | - One-Click Chips: Concise | Formal | Grammar | Metrics       |
 |  | - Side-by-Side Diff Inspector & Multi-Bullet Parser           |
@@ -147,7 +133,9 @@ Load the root repository directory via your browser extensions management page.
 
 ---
 
-## Configuration (BYOK)
+## Configuration & Pricing Model
+
+### Current: Open Source & BYOK (Free Forever)
 
 Skillsy connects directly from your browser to AI inference providers:
 
@@ -157,6 +145,13 @@ Skillsy connects directly from your browser to AI inference providers:
    - **Groq (Free tier available):** Create a key at [console.groq.com/keys](https://console.groq.com/keys).
    - **Alibaba Cloud Model Studio (Qwen):** Available via Alibaba Cloud DashScope console.
 4. Click **Simpan Pengaturan**. The key is saved locally in `chrome.storage.local`.
+
+### Upcoming: Managed Cloud AI (Optional Paid Plan)
+
+For users who prefer not to manage their own API keys or configure developer consoles, a managed cloud tier is planned:
+- Zero setup: install from the Chrome Web Store and start generating immediately.
+- Hosted inference credits managed directly by Skillsy.
+- The open-source BYOK version will remain free and fully supported for developers and privacy-focused users.
 
 ---
 
@@ -177,7 +172,7 @@ Skillsy/
 |   |-- profile.html       # Profile editor interface
 |   |-- profile.js         # Base profile controller
 |   |-- viewer.html        # Interactive A4 PDF document previewer
-|   `-- viewer.js          # In-situ WYSIWYG editor and floating AI selection bubble
+|   `-- viewer.js          # Direct document editor and floating AI selection bubble
 |-- lib/
 |   |-- html2pdf.bundle.min.js # Client-side PDF canvas generator
 |   |-- pdf.min.js             # Client-side PDF parser
