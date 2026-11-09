@@ -62,7 +62,7 @@ Tailor the CV and cover letter now. Return only the JSON.`;
    ================================================================ */
 
 const state = { job: null, gen: null, profile: null, profileRaw: '', activeHistoryItem: null, histSub: 'cv' };
-const DEFAULT_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
+const DEFAULT_MODELS = ['gemini-1.5-flash', 'llama-3.3-70b-versatile', 'qwen/qwen3.8-27b'];
 
 /* ================================================================
    TABS
@@ -1222,8 +1222,9 @@ async function importProfile(file) {
 
 function getFriendlyModelLabel(modelId) {
   const map = {
-    'openai/gpt-oss-120b': 'gpt-oss-120b (Kualitas Terbaik)',
-    'openai/gpt-oss-20b': 'gpt-oss-20b (Cepat & Hemat)',
+    'gemini-1.5-flash': 'gemini-1.5-flash (Google AI - Cepat & Cerdas)',
+    'gemini-1.5-pro': 'gemini-1.5-pro (Google AI - Penalaran Mendalam)',
+    'gemini-2.0-flash-exp': 'gemini-2.0-flash (Google AI Next-Gen)',
     'qwen/qwen3.8-27b': 'qwen3.8-27b (Optimal Bahasa Indonesia)',
     'llama-3.3-70b-versatile': 'llama-3.3-70b (Cepat & Akurat)',
     'llama-3.1-8b-instant': 'llama-3.1-8b (Super Cepat)',

@@ -1,7 +1,8 @@
-// JobFeast service worker - satu-satunya jalur keluar data ke Groq.
+// Skillsy service worker - jalur komunikasi client-side AI ke Google Gemini / Groq.
 // API key hanya hidup di chrome.storage.local dan tidak pernah di-log.
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1';
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/openai';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function getApiKey() {
@@ -9,12 +10,20 @@ async function getApiKey() {
   return (apiKey || '').trim();
 }
 
-// Free tier Groq punya limit token/menit yang ketat (mis. 8000 TPM untuk gpt-oss-120b),
-// jadi parse+generate beruntun bisa kena 429 - auto-retry sesuai jeda yang disarankan Groq.
+function getBaseUrl(apiKey) {
+  if (apiKey && apiKey.startsWith('AIza')) {
+    return GEMINI_BASE;
+  }
+  return GROQ_BASE;
+}
+
+// Auto-retry untuk rate limit / 429
 async function postChatCompletion(body, tries = 4) {
-  const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+  const apiKey = await getApiKey();
+  const baseUrl = getBaseUrl(apiKey);
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getApiKey()}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
   });
   if (res.status === 429 && tries > 0) {
@@ -33,28 +42,32 @@ async function postChatCompletion(body, tries = 4) {
 async function callGroq({ messages, model, temperature = 0.4, maxTokens = 8000 }) {
   const apiKey = await getApiKey();
   if (!apiKey) {
-    const err = new Error('API key Groq belum diatur. Buka tab Settings lalu tempel key kamu (buat gratis di console.groq.com).');
+    const err = new Error('API key belum diatur. Masukkan key Google Gemini atau Groq di tab Settings.');
     err.code = 'NO_KEY';
     throw err;
+  }
+  let targetModel = model;
+  if (apiKey.startsWith('AIza') && (!targetModel || !targetModel.startsWith('gemini'))) {
+    targetModel = 'gemini-1.5-flash';
   }
   let res;
   try {
     res = await postChatCompletion({
-      model,
+      model: targetModel,
       messages,
       temperature,
       max_tokens: maxTokens,
       response_format: { type: 'json_object' },
     });
   } catch (e) {
-    throw new Error('Gagal terhubung ke Groq (jaringan): ' + e.message);
+    throw new Error('Gagal terhubung ke AI provider: ' + e.message);
   }
   if (!res.ok) {
     let detail = '';
     try { detail = (await res.json())?.error?.message || ''; } catch (_) {}
-    if (res.status === 401) throw new Error('API key ditolak Groq (401). Periksa lagi di tab Settings.');
-    if (res.status === 429) throw new Error('Rate limit Groq tercapai (429). Tunggu sebentar lalu coba lagi. ' + detail);
-    throw new Error(`Groq error ${res.status}: ${detail || res.statusText}`);
+    if (res.status === 401) throw new Error('API key ditolak (401). Periksa lagi di tab Settings.');
+    if (res.status === 429) throw new Error('Rate limit tercapai (429). Tunggu sebentar lalu coba lagi. ' + detail);
+    throw new Error(`Inference error ${res.status}: ${detail || res.statusText}`);
   }
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content || '';
@@ -74,6 +87,9 @@ function parseJsonLoose(text) {
 async function listModels() {
   const apiKey = await getApiKey();
   if (!apiKey) throw new Error('API key belum diatur.');
+  if (apiKey.startsWith('AIza')) {
+    return ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'];
+  }
   const res = await fetch(`${GROQ_BASE}/models`, { headers: { Authorization: `Bearer ${apiKey}` } });
   if (!res.ok) throw new Error(`Gagal mengambil daftar model (${res.status}).`);
   const data = await res.json();
@@ -100,7 +116,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true; // keep channel open for async sendResponse
 });
 
-// Chrome: klik ikon  buka side panel. Firefox: klik ikon  buka sidebar.
+// Chrome: klik ikon buka side panel. Firefox: klik ikon buka sidebar.
 chrome.sidePanel?.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 if (typeof browser !== 'undefined' && browser.sidebarAction) {
   chrome.action.onClicked.addListener(() => {

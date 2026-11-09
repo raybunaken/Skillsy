@@ -14,10 +14,10 @@ A local-first browser extension (Manifest V3) that parses job postings directly 
 
 [![Version](https://img.shields.io/badge/version-0.8.0-00DC82.svg?style=flat-square)](https://github.com/raybunaken/Skillsy)
 [![Manifest](https://img.shields.io/badge/manifest-v3-0284c7.svg?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Platform](https://img.shields.io/badge/platform-Chrome%20%7C%20Brave%20%7C%20Edge-f97316.svg?style=flat-square)](https://skillsy.my.id)
+[![AI Engine](https://img.shields.io/badge/ai--engine-Google%20Gemini-4285F4.svg?style=flat-square)](https://aistudio.google.com)
+[![Agentic IDE](https://img.shields.io/badge/built%20with-Google%20Antigravity-4285F4.svg?style=flat-square)](https://github.com/raybunaken/Skillsy)
 [![Architecture](https://img.shields.io/badge/architecture-Local--First%20%2F%20BYOK-8b5cf6.svg?style=flat-square)](https://skillsy.my.id)
-[![Model](https://img.shields.io/badge/model-Qwen%20(Alibaba%20Cloud)-orange.svg?style=flat-square)](https://www.alibabacloud.com)
-[![Inference](https://img.shields.io/badge/inference-Groq%20LPU-10b981.svg?style=flat-square)](https://console.groq.com)
+[![Inference](https://img.shields.io/badge/inference-Groq%20%7C%20Gemini-10b981.svg?style=flat-square)](https://console.groq.com)
 [![License](https://img.shields.io/badge/license-MIT-64748b.svg?style=flat-square)](LICENSE)
 
 </div>
@@ -34,7 +34,7 @@ Skillsy takes a local-first engineering approach:
 - **Interactive Inline Editor:** Generates live documents with full direct editing (like Word) plus a floating AI revision bubble that triggers on text selection.
 - **Strict Anti-Fabrication Engine:** The prompt pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
 - **Deterministic 1-Page Layout:** CV generation produces a standardized single-page A4 PDF rendered directly via client-side Canvas and html2pdf.
-- **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Groq LPU or OpenAI-compatible endpoints) with zero intermediary proxy servers.
+- **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Google Gemini, Groq LPU, or OpenAI-compatible endpoints) with zero intermediary proxy servers.
 
 ---
 
@@ -63,7 +63,7 @@ Skillsy includes a built-in document viewer and interactive editor that transfor
 - **Contextual Cover Letters:** Formulates role-specific cover letters highlighting genuine qualifications without generic filler or cliches.
 - **Multiple CV Design Templates:** Choose between clean visual layouts tailored for corporate, tech, or creative roles.
 - **In-Browser Job Tracking:** Built-in history management allowing users to track application status (Saved, Applied, Interviewing, Rejected) locally.
-- **Optimized Multilingual Inference:** Native support for high-throughput inference featuring **Qwen (Alibaba Cloud)** as the recommended engine for nuanced Bahasa Indonesia generation, alongside Llama 3.3.
+- **Gemini & Multi-Model Inference:** Native client-side support for **Google Gemini (Gemini 2.5 Flash / 1.5 Pro)** and high-speed Groq LPU, with Qwen for localized Bahasa Indonesia nuances.
 
 ---
 
@@ -98,8 +98,8 @@ Skillsy includes a built-in document viewer and interactive editor that transfor
                                                   v Direct HTTPS (BYOK)
                                     +------------------------------+
                                     | AI Inference Provider        |
+                                    | - Google Gemini API          |
                                     | - Groq LPU (console.groq.com)|
-                                    | - Qwen / Alibaba Cloud Models|
                                     | - OpenAI-Compatible Endpoints|
                                     +------------------------------+
                                                   |
@@ -144,7 +144,8 @@ Skillsy connects directly from your browser to AI inference providers:
 1. Click the Skillsy icon in your browser toolbar to open the sidepanel.
 2. Select the **Settings** tab.
 3. Input your API key:
-   - **Groq (Free):** Create an API key at [console.groq.com/keys](https://console.groq.com/keys) to run high-speed inference on Qwen and Llama models.
+   - **Google Gemini (Free):** Create a key at [aistudio.google.com](https://aistudio.google.com).
+   - **Groq (Free):** Create a key at [console.groq.com/keys](https://console.groq.com/keys).
 4. Click **Simpan Pengaturan**. The key is saved locally in `chrome.storage.local`.
 
 ### Upcoming: Managed Cloud AI (Optional Paid Plan)
@@ -162,7 +163,7 @@ For users who prefer not to manage their own API keys or configure developer con
 Skillsy/
 |-- manifest.json          # Manifest V3 extension configuration
 |-- background/
-|   `-- service-worker.js  # Background life-cycle and sidepanel routing
+|   `-- service-worker.js  # Background life-cycle and Gemini / Groq routing
 |-- content/
 |   `-- linkedin.js        # Read-only DOM extractor for LinkedIn postings
 |-- sidepanel/
@@ -188,7 +189,8 @@ Skillsy/
 
 ## Acknowledgements & Ecosystem
 
-Skillsy development and model explorations are supported by:
+Skillsy development and agentic explorations are supported by:
+- **Google Antigravity & Google AI:** Autonomous agentic IDE engineering and Gemini foundation models.
 - **Alibaba Cloud AI Catalyst Program:** Selected participant exploring Qwen foundation models and Model Studio.
 - **Groq:** High-throughput LPU inference acceleration for ultra-low latency document generation.
 

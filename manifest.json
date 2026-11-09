@@ -4,7 +4,7 @@
   "version": "0.8.0",
   "description": "Baca lowongan dari halaman LinkedIn yang kamu buka, lalu generate CV & cover letter yang dipersonalisasi dari profil dasar kamu - jujur, tanpa mengarang. Output PDF 1 halaman A4, semua data lokal.",
   "permissions": ["storage", "unlimitedStorage", "downloads", "sidePanel", "scripting"],
-  "host_permissions": ["https://*.linkedin.com/*", "https://api.groq.com/*"],
+  "host_permissions": ["https://*.linkedin.com/*", "https://api.groq.com/*", "https://generativelanguage.googleapis.com/*"],
   "background": {
     "service_worker": "background/service-worker.js",
     "scripts": ["background/service-worker.js"]
