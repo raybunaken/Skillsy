@@ -1,209 +1,80 @@
-<div align="center">
+# Skillsy - Honest AI Career Copilot for LinkedIn
 
-<img src="assets/logo.svg" alt="Skillsy Logo" width="88" height="88" />
+Cross-browser extension (Chrome MV3 + Firefox) yang membaca **lowongan dari halaman LinkedIn yang sedang kamu buka**, lalu membuat **CV 1 halaman A4 + cover letter yang dipersonalisasi untuk lowongan itu** - jujur, tanpa mengarang - langsung jadi **PDF**.
 
-# Skillsy
+> **Penting soal API key**: Skillsy adalah BYOK (bring your own key). Key kamu disimpan hanya di browser kamu (`chrome.storage.local`). **Jangan pernah** commit API key ke repo ini atau menempelkannya di issue/screenshot. Key yang pernah bocor wajib di-revoke di provider masing-masing (Groq / DashScope / OpenAI).
 
-### Client-Side AI Career Copilot for LinkedIn and Job Boards
+## Untuk kontributor dan AI agent
 
-A local-first browser extension (Manifest V3) that parses job postings directly from active tabs, generates tailored single-page A4 PDF resumes and authentic cover letters, and lets you edit or refine text in real-time with an interactive floating AI bubble.
+Seluruh konteks desain, strategi bisnis, keputusan arsitektur, pelajaran debug (terutama soal ekstraksi LinkedIn), protokol testing, dan alur rilis ada di [AGENTS.md](AGENTS.md). Baca dulu sebelum mengubah apa pun.
 
-[Website](https://skillsy.my.id) | [Download ZIP](https://skillsy.my.id/skillsy-extension.zip) | [Quick Setup](#installation) | [Interactive Editor](#interactive-document-editor--ai-selection-bubble) | [Architecture](#architecture) | [Security](#privacy-and-security-guarantees)
-
-<br/>
-
-[![Version](https://img.shields.io/badge/version-0.8.0-00DC82.svg?style=flat-square)](https://github.com/raybunaken/Skillsy)
-[![Manifest](https://img.shields.io/badge/manifest-v3-0284c7.svg?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![AI Engine](https://img.shields.io/badge/ai--engine-Google%20Gemini-4285F4.svg?style=flat-square)](https://aistudio.google.com)
-[![Agentic IDE](https://img.shields.io/badge/built%20with-Google%20Antigravity-4285F4.svg?style=flat-square)](https://github.com/raybunaken/Skillsy)
-[![Architecture](https://img.shields.io/badge/architecture-Local--First%20%2F%20BYOK-8b5cf6.svg?style=flat-square)](https://skillsy.my.id)
-[![Inference](https://img.shields.io/badge/inference-Groq%20%7C%20Gemini-10b981.svg?style=flat-square)](https://console.groq.com)
-[![License](https://img.shields.io/badge/license-MIT-64748b.svg?style=flat-square)](LICENSE)
-
-</div>
-
-<br/>
-
-## Overview
-
-Most AI resume tools operate as centralized SaaS applications: your full employment history and personal contact details are stored in remote databases, and generated outputs frequently fabricate metrics, produce rigid static text, or overflow onto awkward multi-page formats that break Applicant Tracking Systems (ATS).
-
-Skillsy takes a local-first engineering approach:
-
-- **Local Execution:** PDF parsing, DOM extraction, and profile storage happen entirely inside your browser runtime.
-- **Interactive Inline Editor:** Generates live documents with full direct editing (like Word) plus a floating AI revision bubble that triggers on text selection.
-- **Strict Anti-Fabrication Engine:** The prompt pipeline enforces hard constraints against inventing titles, companies, or credentials. Real accomplishments are framed optimally, never hallucinated.
-- **Deterministic 1-Page Layout:** CV generation produces a standardized single-page A4 PDF rendered directly via client-side Canvas and html2pdf.
-- **Bring Your Own Key (BYOK):** Direct client-to-API communication with LLM providers (Google Gemini, Groq LPU, or OpenAI-compatible endpoints) with zero intermediary proxy servers.
-
----
-
-## Interactive Document Editor & AI Selection Bubble
-
-Skillsy includes a built-in document viewer and interactive editor that transforms static AI outputs into a dynamic, word-processor-like experience:
-
-1. **Direct Canvas Editing:** Click anywhere on the generated CV or cover letter to edit text, adjust bullet points, or fix dates directly on the A4 page with instant auto-save to local storage.
-2. **Contextual Floating AI Bubble:** Highlight any sentence, bullet point, or paragraph on the preview page. A smart floating toolbar appears directly at the cursor position powered by the browser CSS Custom Highlight API.
-3. **One-Click Refinement Chips:**
-   - **Ringkas:** Tightens prose and trims unnecessary fluff.
-   - **Formal:** Converts wording into authoritative, professional corporate phrasing.
-   - **Bahasa:** Corrects grammar and syntax without altering factual meaning.
-   - **Fokus Angka:** Reframes bullet points to emphasize quantifiable achievements and metrics.
-4. **Custom Prompt Instructions:** Type specific natural language instructions (e.g., "Rephrase using the STAR method", "Emphasize Kubernetes leadership") directly into the bubble.
-5. **Side-by-Side Diff Comparison:** Inspect proposed AI revisions against the original text before choosing to Accept or Reject changes.
-6. **Multi-Bullet Structure Preservation:** Intelligently recognizes HTML list hierarchies (`<ul>`, `<li>`) so bulleted experience blocks retain clean indentation and typography.
-
----
-
-## Core Capabilities
-
-- **One-Click DOM Extraction:** Reads role titles, company names, job descriptions, and qualification requirements directly from LinkedIn tabs without scraping account credentials.
-- **Floating AI Selection Bubble:** Highlights and refines specific sentences or sections on-demand without regenerating the entire document.
-- **Single-Page PDF Resume Generation:** Generates clean, ATS-compliant resumes with responsive typography and professional layout.
-- **Contextual Cover Letters:** Formulates role-specific cover letters highlighting genuine qualifications without generic filler or cliches.
-- **Multiple CV Design Templates:** Choose between clean visual layouts tailored for corporate, tech, or creative roles.
-- **In-Browser Job Tracking:** Built-in history management allowing users to track application status (Saved, Applied, Interviewing, Rejected) locally.
-- **Gemini & Multi-Model Inference:** Native client-side support for **Google Gemini (Gemini 2.5 Flash / 1.5 Pro)** and high-speed Groq LPU, with Qwen for localized Bahasa Indonesia nuances.
-
----
-
-## Architecture
+## Cara kerja
 
 ```
-+------------------------------------------------------------------+
-| Browser Runtime (Chrome / Brave / Edge)                          |
-|                                                                  |
-|  +------------------------+      +----------------------------+  |
-|  | Active Job Tab (DOM)   |      | Skillsy Sidepanel UI       |  |
-|  | - LinkedIn Job Details | ---> | - Profile Manager          |  |
-|  | - Requirements & Title |      | - Document Generator       |  |
-|  +------------------------+      +--------------+-------------+  |
-|                                                 |                |
-|  +----------------------------------------------+                |
-|  | Interactive Document Viewer & Editor                          |
-|  | - Live Document Editing (contenteditable)                     |
-|  | - Floating AI Selection Bubble (CSS Custom Highlights)        |
-|  | - One-Click Chips: Concise | Formal | Grammar | Metrics       |
-|  | - Side-by-Side Diff Inspector & Multi-Bullet Parser           |
-|  +----------------------------------------------+                |
-|                                                 |                |
-|  +----------------------------------------------+                |
-|  | Client-Side Storage: chrome.storage.local                     |
-|  | - Base Profile JSON                                           |
-|  | - Encrypted Local API Key                                     |
-|  | - Local Application History & Auto-Saved Edits                |
-|  +----------------------------------------------+                |
-+-------------------------------------------------|----------------+
-                                                  |
-                                                  v Direct HTTPS (BYOK)
-                                    +------------------------------+
-                                    | AI Inference Provider        |
-                                    | - Google Gemini API          |
-                                    | - Groq LPU (console.groq.com)|
-                                    | - OpenAI-Compatible Endpoints|
-                                    +------------------------------+
-                                                  |
-                                                  v
-                                    +------------------------------+
-                                    | Single-Page A4 PDF Output    |
-                                    | (html2pdf.bundle.min.js)     |
-                                    +------------------------------+
+┌─────────────┐     job posting     ┌──────────────┐
+│  LinkedIn   │ ──────────────────▶ │   Skillsy    │
+│ (tab aktif) │   (read-only DOM)   │  sidepanel   │
+└─────────────┘                     └──────┬───────┘
+                                           │ profile + job
+                                           ▼
+                                    ┌──────────────┐
+           PDF (Downloads/Skillsy/) │   LLM API    │
+           CV · Cover Letter ◀───── │ (Groq / Qwen)│
+                                    └──────────────┘
 ```
 
----
+1. **Sekali setup** - upload CV dasar kamu (PDF) atau buat lewat wawancara chat interaktif. AI mengubahnya menjadi **profil terstruktur** (JSON, bisa diedit). Profil ini adalah *single source of truth*.
+2. **Saat apply** - buka lowongan di LinkedIn, klik "Ambil dari tab LinkedIn ini", klik "Buat CV + Cover Letter".
+3. **Periksa & simpan** - preview bisa diedit langsung; pemeriksa kejujuran menandai angka/skill yang tidak ada di profil; download otomatis dua PDF masuk ke folder `Downloads/Skillsy/`.
 
-## Installation
+## Jaminan kejujuran (fitur inti)
 
-### Method 1: Pre-Built ZIP Package (Fastest)
+Skillsy dirancang untuk **mempersonalisasi, bukan mengarang**. Tiga lapis:
 
-1. Download the latest build: [skillsy-extension.zip](https://skillsy.my.id/skillsy-extension.zip).
-2. Unpack the ZIP archive to a folder of your choice.
-3. Open your browser and navigate to:
-   - Chrome: `chrome://extensions`
-   - Brave: `brave://extensions`
-   - Edge: `edge://extensions`
-4. Toggle **Developer mode** on in the top-right corner.
-5. Click **Load unpacked** and select the unpacked directory.
+| Lapis | Cara |
+|---|---|
+| 1. Prompt | Instruksi keras: hanya fakta dari profil; angka wajib disalin persis; kebutuhan lowongan yang tidak ada di profil dilewati, bukan diklaim |
+| 2. Validator | Setelah generate, semua **angka metrik** (%, ribuan, "x") dan **item skill** dicocokkan ke profil via regex dan token matching; yang tidak ketemu di-flag merah di preview |
+| 3. Human-in-the-loop | Preview selalu bisa diedit sebelum download; ada balon revisi AI untuk teks yang diblok; tidak ada auto-submit |
 
-### Method 2: Build From Source
+## Instalasi
 
-```bash
-git clone https://github.com/raybunaken/Skillsy.git
-cd Skillsy
-```
-Load the root repository directory via your browser extensions management page.
+### Chrome / Edge / Brave (Developer Mode)
+1. Buka `chrome://extensions` lalu aktifkan **Developer mode** di pojok kanan atas.
+2. Klik **Load unpacked**, pilih folder ekstensi Skillsy ini.
+3. Klik ikon Skillsy di toolbar browser, side panel akan terbuka.
 
----
+### Firefox
+1. Buka `about:debugging#/runtime/this-firefox`.
+2. Klik **Load Temporary Add-on** lalu pilih file `manifest.json`.
+3. Klik ikon Skillsy di toolbar (atau menu View -> Sidebar).
 
-## Configuration & Pricing Model
+### Setup pertama
+1. Tab **Settings**: tempel API key (misal Groq gratis di [console.groq.com](https://console.groq.com/keys)).
+2. Tab **Profil**: upload PDF CV atau ikuti panduan chat untuk mengisi pengalamanmu.
+3. Buka lowongan mana pun di LinkedIn, buka Skillsy, klik **Generate**.
 
-### Current: Open Source & BYOK (Free Forever)
+## Privasi
 
-Skillsy connects directly from your browser to AI inference providers:
+- Profil, riwayat generate, dan API key hanya tersimpan di `chrome.storage.local` - **tidak ada server perantara**.
+- Data hanya keluar dari browser saat kamu menekan generate: teks lowongan + profil dikirim langsung ke endpoint LLM resmi.
+- Content script bersifat **read-only** terhadap LinkedIn: hanya membaca teks lowongan yang kamu buka, tidak mengirim atau mengubah apa pun di akun LinkedIn kamu.
 
-1. Click the Skillsy icon in your browser toolbar to open the sidepanel.
-2. Select the **Settings** tab.
-3. Input your API key:
-   - **Google Gemini (Free):** Create a key at [aistudio.google.com](https://aistudio.google.com).
-   - **Groq (Free):** Create a key at [console.groq.com/keys](https://console.groq.com/keys).
-4. Click **Simpan Pengaturan**. The key is saved locally in `chrome.storage.local`.
-
-### Upcoming: Managed Cloud AI (Optional Paid Plan)
-
-For users who prefer not to manage their own API keys or configure developer consoles, a managed cloud tier is planned:
-- Zero setup: install from the Chrome Web Store and start generating immediately.
-- Hosted inference credits managed directly by Skillsy.
-- The open-source BYOK version will remain free and fully supported for developers and privacy-focused users.
-
----
-
-## Repository Structure
+## Struktur
 
 ```
-Skillsy/
-|-- manifest.json          # Manifest V3 extension configuration
-|-- background/
-|   `-- service-worker.js  # Background life-cycle and Gemini / Groq routing
-|-- content/
-|   `-- linkedin.js        # Read-only DOM extractor for LinkedIn postings
-|-- sidepanel/
-|   |-- sidepanel.html     # Main sidepanel interface
-|   |-- sidepanel.css      # Dark-mode Apple HIG inspired UI styling
-|   |-- sidepanel.js       # Core state management and LLM dispatching
-|   |-- prompts.js         # Anti-fabrication prompt templates
-|   |-- profile.html       # Profile editor interface
-|   |-- profile.js         # Base profile controller
-|   |-- viewer.html        # Interactive A4 PDF document previewer
-|   `-- viewer.js          # Direct document editor and floating AI selection bubble
-|-- lib/
-|   |-- html2pdf.bundle.min.js # Client-side PDF canvas generator
-|   |-- pdf.min.js             # Client-side PDF parser
-|   `-- pdf.worker.min.js      # Background web worker for parsing
-|-- assets/
-|   `-- logo.svg           # High-resolution brand vector
-|-- LICENSE                # MIT License
-`-- README.md              # Technical documentation
+skillsy/
+├── manifest.json                  # Cross-browser MV3
+├── background/service-worker.js   # Jalur fetch LLM (retry on 429, OpenAI compatible)
+├── content/linkedin.js            # Ekstraksi lowongan dari DOM (multi-frame + self-healing)
+├── sidepanel/                     # UI utama: Generate · Profil · Riwayat · Settings
+│   ├── sidepanel.html/css/js      # Pipeline generate, validator kejujuran, one-page fit
+│   ├── prompts.js                 # Prompt sistem bersama (PARSE_SYSTEM, GEN_SYSTEM)
+│   ├── viewer.html/js             # Full-page document editor (diff, undo stack, revisi AI)
+│   └── profile.html/js            # Full-page profile editor + mode wawancara interaktif
+└── lib/                           # pdf.js (baca CV) + html2pdf.js (buat PDF A4)
 ```
 
----
+## Lisensi
 
-## Acknowledgements & Ecosystem
-
-Skillsy development and agentic explorations are supported by:
-- **Google Antigravity & Google AI:** Autonomous agentic IDE engineering and Gemini foundation models.
-- **Alibaba Cloud AI Catalyst Program:** Selected participant exploring Qwen foundation models and Model Studio.
-- **Groq:** High-throughput LPU inference acceleration for ultra-low latency document generation.
-
----
-
-## Privacy and Security Guarantees
-
-- **Zero Remote Document Storage:** Your uploaded CV text is processed in memory and stored locally in browser storage.
-- **Client-Direct Calls:** API requests to inference providers originate directly from your browser runtime, not through intermediary servers.
-- **Zero Tracker Policy:** No third-party trackers, telemetry scripts, or analytics beacons.
-
----
-
-## License
-
-This project is open-source software licensed under the [MIT License](LICENSE).
+MIT - bebas dipakai, difork, dan dikembangkan.

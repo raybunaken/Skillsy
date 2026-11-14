@@ -62,7 +62,7 @@ Tailor the CV and cover letter now. Return only the JSON.`;
    ================================================================ */
 
 const state = { job: null, gen: null, profile: null, profileRaw: '', activeHistoryItem: null, histSub: 'cv' };
-const DEFAULT_MODELS = ['gemini-1.5-flash', 'llama-3.3-70b-versatile', 'qwen/qwen3.8-27b'];
+const DEFAULT_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
 
 /* ================================================================
    TABS
@@ -144,6 +144,8 @@ async function grabJob() {
 }
 
 function renderJob() {
+  setTimeout(renderGapAudit, 50);
+
   const j = state.job;
   $('#job-info').classList.remove('hidden');
   $('#job-title').textContent = j.title;
@@ -1222,9 +1224,8 @@ async function importProfile(file) {
 
 function getFriendlyModelLabel(modelId) {
   const map = {
-    'gemini-1.5-flash': 'gemini-1.5-flash (Google AI - Cepat & Cerdas)',
-    'gemini-1.5-pro': 'gemini-1.5-pro (Google AI - Penalaran Mendalam)',
-    'gemini-2.0-flash-exp': 'gemini-2.0-flash (Google AI Next-Gen)',
+    'openai/gpt-oss-120b': 'gpt-oss-120b (Kualitas Terbaik)',
+    'openai/gpt-oss-20b': 'gpt-oss-20b (Cepat & Hemat)',
     'qwen/qwen3.8-27b': 'qwen3.8-27b (Optimal Bahasa Indonesia)',
     'llama-3.3-70b-versatile': 'llama-3.3-70b (Cepat & Akurat)',
     'llama-3.1-8b-instant': 'llama-3.1-8b (Super Cepat)',
@@ -1835,3 +1836,227 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ================================================================
+   GAP INTERVIEW & PROFILE MEMORY (Audit Kesiapan Interaktif)
+   ================================================================ */
+
+const KNOWN_SKILL_CATALOG = [
+  // Backend & Languages
+  { name: 'PHP / Laravel', match: /\b(php|laravel)\b/i, category: 'Backend' },
+  { name: 'Python', match: /\bpython\b/i, category: 'Backend' },
+  { name: 'Go / Golang', match: /\b(go|golang)\b/i, category: 'Backend' },
+  { name: 'Node.js', match: /\bnode(\.js)?\b/i, category: 'Backend' },
+  { name: 'Java / Spring', match: /\b(java|spring)\b(?!script)/i, category: 'Backend' },
+  { name: '.NET / C#', match: /\b(\.net|c#|csharp)\b/i, category: 'Backend' },
+  
+  // Frontend & Mobile
+  { name: 'React / Next.js', match: /\b(react|next(\.js)?)\b/i, category: 'Frontend' },
+  { name: 'Vue.js', match: /\bvue(\.js)?\b/i, category: 'Frontend' },
+  { name: 'TypeScript', match: /\btypescript\b/i, category: 'Frontend' },
+  { name: 'Flutter', match: /\bflutter\b/i, category: 'Mobile' },
+  { name: 'React Native', match: /\breact\s*native\b/i, category: 'Mobile' },
+  
+  // Cloud & DevOps
+  { name: 'Docker / Container', match: /\bdocker\b/i, category: 'DevOps' },
+  { name: 'Kubernetes', match: /\b(kubernetes|k8s)\b/i, category: 'DevOps' },
+  { name: 'AWS Cloud', match: /\b(aws|amazon\s*web\s*services)\b/i, category: 'DevOps' },
+  { name: 'GCP Cloud', match: /\b(gcp|google\s*cloud)\b/i, category: 'DevOps' },
+  { name: 'CI/CD Pipelines', match: /\b(ci\/cd|github\s*actions|jenkins|gitlab)\b/i, category: 'DevOps' },
+  
+  // AI & Data
+  { name: 'Proyek AI / LLM', match: /\b(ai|llm|large\s*language|machine\s*learning|deep\s*learning)\b/i, category: 'AI' },
+  { name: 'RAG / Vector DB', match: /\b(rag|vector|embeddings|retrieval|pinecone|qdrant)\b/i, category: 'AI' },
+  { name: 'Data Analysis / SQL', match: /\b(sql|data\s*analysis|postgres|mysql|bi|tableau)\b/i, category: 'Data' }
+];
+
+function checkProfileHasSkill(profile, skillObj) {
+  if (!profile) return false;
+  const target = skillObj.match;
+  
+  if (profile.skills) {
+    for (const cat in profile.skills) {
+      const arr = profile.skills[cat];
+      if (Array.isArray(arr) && arr.some(s => target.test(s))) return true;
+    }
+  }
+  if (profile.memory && Array.isArray(profile.memory)) {
+    if (profile.memory.some(m => target.test(m.skill || '') || target.test(m.context || '') || target.test(m.bullet || ''))) return true;
+  }
+  if (profile.experience && Array.isArray(profile.experience)) {
+    for (const exp of profile.experience) {
+      if (target.test(exp.role || '') || target.test(exp.company || '')) return true;
+      if (Array.isArray(exp.bullets) && exp.bullets.some(b => target.test(b))) return true;
+    }
+  }
+  if (profile.projects && Array.isArray(profile.projects)) {
+    for (const p of profile.projects) {
+      if (target.test(p.name || '') || target.test(p.role || '')) return true;
+      if (Array.isArray(p.bullets) && p.bullets.some(b => target.test(b))) return true;
+    }
+  }
+  return false;
+}
+
+function auditJobGaps(job, profile) {
+  if (!job || !job.description) return [];
+  const text = (job.title + ' ' + job.description);
+  const gaps = [];
+
+  for (const item of KNOWN_SKILL_CATALOG) {
+    if (item.match.test(text)) {
+      if (!checkProfileHasSkill(profile, item)) {
+        gaps.push(item);
+      }
+    }
+  }
+  return gaps.slice(0, 4);
+}
+
+function renderGapAudit() {
+  const box = $('#gap-audit-box');
+  const container = $('#gap-items-container');
+  if (!box || !container) return;
+
+  const gaps = auditJobGaps(state.job, state.profile);
+  if (!gaps || gaps.length === 0) {
+    box.classList.add('hidden');
+    return;
+  }
+
+  box.classList.remove('hidden');
+  container.innerHTML = '';
+
+  gaps.forEach((gap) => {
+    const el = document.createElement('div');
+    el.className = 'gap-item';
+    el.dataset.skill = gap.name;
+    el.innerHTML = `
+      <div class="gap-item-head">
+        <span class="gap-tag">BELUM ADA DI CV</span>
+        <span class="gap-skill-name">${esc(gap.name)}</span>
+      </div>
+      <div class="gap-item-prompt">
+        Apakah kamu pernah punya pengalaman memakai <b>${esc(gap.name)}</b> sebelumnya?
+      </div>
+      <div class="gap-item-btns">
+        <button type="button" class="btn small primary btn-gap-yes">Ya, Pernah</button>
+        <button type="button" class="btn small btn-gap-no">Belum Pernah</button>
+      </div>
+
+      <div class="gap-item-expand hidden">
+        <label class="gap-label">Tuliskan konteks singkat pengalamanmu:</label>
+        <div class="gap-input-row">
+          <input type="text" class="gap-ctx-input" placeholder="Contoh: Bikin REST API backend absensi pakai ${esc(gap.name)}...">
+          <button type="button" class="btn small primary btn-gap-format">Format ke STAR</button>
+        </div>
+
+        <div class="gap-preview-box hidden">
+          <label class="gap-label">Draft Kalimat CV (Bisa kamu edit/revisi bebas):</label>
+          <textarea class="gap-bullet-textarea" rows="2"></textarea>
+          <div class="gap-action-row">
+            <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
+            <button type="button" class="btn small btn-gap-cancel">Batal</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="gap-item-saved hidden">
+        <span class="saved-icon">&#10003;</span>
+        <span class="saved-text">Pengalaman disimpan ke profil dan akan dipakai di CV ini.</span>
+      </div>
+    `;
+
+    const btnYes = el.querySelector('.btn-gap-yes');
+    const btnNo = el.querySelector('.btn-gap-no');
+    const expand = el.querySelector('.gap-item-expand');
+    const ctxInput = el.querySelector('.gap-ctx-input');
+    const btnFormat = el.querySelector('.btn-gap-format');
+    const prevBox = el.querySelector('.gap-preview-box');
+    const txtArea = el.querySelector('.gap-bullet-textarea');
+    const btnSave = el.querySelector('.btn-gap-save');
+    const btnCancel = el.querySelector('.btn-gap-cancel');
+    const savedMsg = el.querySelector('.gap-item-saved');
+
+    btnYes.addEventListener('click', () => {
+      expand.classList.remove('hidden');
+      btnYes.classList.add('hidden');
+      btnNo.classList.add('hidden');
+      ctxInput.focus();
+    });
+
+    btnNo.addEventListener('click', () => {
+      el.style.opacity = '0.45';
+      el.style.pointerEvents = 'none';
+      btnNo.textContent = 'Dilewati';
+    });
+
+    const formatBullet = () => {
+      const rawCtx = ctxInput.value.trim();
+      let draft = '';
+      if (rawCtx) {
+        draft = `Engineered practical implementation of ${gap.name} (${rawCtx}), optimizing workflow delivery and reliability.`;
+      } else {
+        draft = `Applied ${gap.name} in building core application features, ensuring technical reliability and clean code delivery.`;
+      }
+      txtArea.value = draft;
+      prevBox.classList.remove('hidden');
+      txtArea.focus();
+    };
+
+    btnFormat.addEventListener('click', formatBullet);
+    ctxInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') formatBullet();
+    });
+
+    btnCancel.addEventListener('click', () => {
+      expand.classList.add('hidden');
+      btnYes.classList.remove('hidden');
+      btnNo.classList.remove('hidden');
+    });
+
+    btnSave.addEventListener('click', async () => {
+      const finalBullet = txtArea.value.trim();
+      if (!finalBullet) return;
+
+      if (!state.profile) state.profile = {};
+      if (!state.profile.skills) state.profile.skills = {};
+      const cat = gap.category || 'Technical Skills';
+      if (!Array.isArray(state.profile.skills[cat])) state.profile.skills[cat] = [];
+      if (!state.profile.skills[cat].includes(gap.name)) {
+        state.profile.skills[cat].push(gap.name);
+      }
+
+      state.profile.memory = state.profile.memory || [];
+      state.profile.memory.push({
+        skill: gap.name,
+        context: ctxInput.value.trim(),
+        bullet: finalBullet,
+        ts: Date.now()
+      });
+
+      if (Array.isArray(state.profile.experience) && state.profile.experience.length > 0) {
+        state.profile.experience[0].bullets = state.profile.experience[0].bullets || [];
+        state.profile.experience[0].bullets.unshift(finalBullet);
+      } else {
+        state.profile.experience = state.profile.experience || [];
+        state.profile.experience.push({
+          company: 'Additional Experience',
+          role: 'Technical Project',
+          dates: 'Recent',
+          bullets: [finalBullet]
+        });
+      }
+
+      await chrome.storage.local.set({ profile: state.profile });
+      if (typeof updateProfileMeta === 'function') updateProfileMeta();
+
+      expand.classList.add('hidden');
+      savedMsg.classList.remove('hidden');
+      el.style.borderColor = 'rgba(74, 222, 128, 0.35)';
+      el.style.background = 'rgba(74, 222, 128, 0.05)';
+    });
+
+    container.appendChild(el);
+  });
+}
