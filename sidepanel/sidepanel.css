@@ -2067,3 +2067,208 @@ details summary:hover {
   border: 1px solid rgba(250, 204, 21, 0.25) !important;
   color: #fde047 !important;
 }
+
+/* ================================================================
+   READINESS AUDIT & GAP INTERVIEW STYLES
+   ================================================================ */
+.gap-card {
+  border: 1px solid rgba(218, 250, 156, 0.25) !important;
+  background: #13151c !important;
+  margin-bottom: 14px !important;
+  padding: 14px !important;
+  border-radius: 10px !important;
+}
+
+.gap-card.gap-warning {
+  border-color: rgba(250, 204, 21, 0.35) !important;
+}
+
+.gap-card.gap-success {
+  border-color: rgba(74, 222, 128, 0.35) !important;
+}
+
+.gap-alert-banner {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.gap-alert-banner.success {
+  background: rgba(74, 222, 128, 0.05);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+.gap-alert-top {
+  margin-bottom: 8px;
+}
+
+.gap-badge-warn {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fde047;
+  background: rgba(250, 204, 21, 0.15);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.gap-badge-ok {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #86efac;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.gap-alert-desc {
+  font-size: 12px;
+  color: #c4c7cc;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.gap-alert-desc b {
+  color: #ffffff;
+}
+
+.matched-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.matched-chip {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(74, 222, 128, 0.1);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.gap-items-list {
+  display: grid;
+  gap: 10px;
+}
+
+.gap-item {
+  background: #181b24;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.gap-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gap-tag {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.gap-skill-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.gap-item-prompt {
+  font-size: 12px;
+  color: #c4c7cc;
+  line-height: 1.45;
+}
+
+.gap-item-prompt b {
+  color: var(--accent);
+}
+
+.gap-item-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.gap-item-expand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #12141a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 4px;
+}
+
+.gap-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.gap-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gap-input-row input {
+  margin-bottom: 0 !important;
+  flex: 1;
+}
+
+.gap-preview-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.gap-bullet-textarea {
+  width: 100% !important;
+  background: #090a0f !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  resize: vertical;
+}
+
+.gap-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.gap-item-saved {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #86efac;
+  font-weight: 600;
+  padding-top: 4px;
+}

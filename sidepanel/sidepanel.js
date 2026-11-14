@@ -120,8 +120,14 @@ async function grabJob() {
       const btnGen = $('#btn-generate');
       btnGen.textContent = `Buat CV + Cover Letter untuk ${res.job.company}`;
       btnGen.classList.add('ready');
-      showStatus(st, `Lowongan siap: ${res.job.title} di ${res.job.company}. Lanjut: klik tombol biru di bawah.`, 'ok');
-      btnGen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showStatus(st, `Lowongan siap: ${res.job.title} di ${res.job.company}. Cek audit kesiapan di bawah:`, 'ok');
+      showStatus(st, `Lowongan siap: ${res.job.title} di ${res.job.company}. Cek audit kesiapan di bawah:`, 'ok');
+      const gapBox = $('#gap-audit-box');
+      if (gapBox) {
+        gapBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        btnGen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -1842,32 +1848,50 @@ document.addEventListener('DOMContentLoaded', init);
    ================================================================ */
 
 const KNOWN_SKILL_CATALOG = [
-  // Backend & Languages
-  { name: 'PHP / Laravel', match: /\b(php|laravel)\b/i, category: 'Backend' },
-  { name: 'Python', match: /\bpython\b/i, category: 'Backend' },
-  { name: 'Go / Golang', match: /\b(go|golang)\b/i, category: 'Backend' },
-  { name: 'Node.js', match: /\bnode(\.js)?\b/i, category: 'Backend' },
-  { name: 'Java / Spring', match: /\b(java|spring)\b(?!script)/i, category: 'Backend' },
-  { name: '.NET / C#', match: /\b(\.net|c#|csharp)\b/i, category: 'Backend' },
-  
-  // Frontend & Mobile
-  { name: 'React / Next.js', match: /\b(react|next(\.js)?)\b/i, category: 'Frontend' },
-  { name: 'Vue.js', match: /\bvue(\.js)?\b/i, category: 'Frontend' },
-  { name: 'TypeScript', match: /\btypescript\b/i, category: 'Frontend' },
-  { name: 'Flutter', match: /\bflutter\b/i, category: 'Mobile' },
-  { name: 'React Native', match: /\breact\s*native\b/i, category: 'Mobile' },
-  
-  // Cloud & DevOps
-  { name: 'Docker / Container', match: /\bdocker\b/i, category: 'DevOps' },
-  { name: 'Kubernetes', match: /\b(kubernetes|k8s)\b/i, category: 'DevOps' },
-  { name: 'AWS Cloud', match: /\b(aws|amazon\s*web\s*services)\b/i, category: 'DevOps' },
-  { name: 'GCP Cloud', match: /\b(gcp|google\s*cloud)\b/i, category: 'DevOps' },
-  { name: 'CI/CD Pipelines', match: /\b(ci\/cd|github\s*actions|jenkins|gitlab)\b/i, category: 'DevOps' },
-  
-  // AI & Data
-  { name: 'Proyek AI / LLM', match: /\b(ai|llm|large\s*language|machine\s*learning|deep\s*learning)\b/i, category: 'AI' },
-  { name: 'RAG / Vector DB', match: /\b(rag|vector|embeddings|retrieval|pinecone|qdrant)\b/i, category: 'AI' },
-  { name: 'Data Analysis / SQL', match: /\b(sql|data\s*analysis|postgres|mysql|bi|tableau)\b/i, category: 'Data' }
+  // --- Data Analytics, BI & Engineering ---
+  { name: 'Tableau', match: /\btableau\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah membuat visualisasi atau dashboard analitik menggunakan Tableau?' },
+  { name: 'Power BI', match: /\b(power\s*bi|powerbi|dax)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah mengembangkan dashboard atau data model di Power BI / DAX?' },
+  { name: 'Looker / Metabase', match: /\b(looker|metabase|google\s*data\s*studio)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu punya pengalaman eksplorasi data di Looker, Metabase, atau Data Studio?' },
+  { name: 'Advanced Excel / Sheets', match: /\b(excel|spreadsheets?|vlookup|pivot\s*table|google\s*sheets|xlookup)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu terbiasa memproses data kompleks dengan rumus Advanced Excel / Spreadsheets?' },
+  { name: 'SQL / Databases', match: /\b(sql|postgresql|mysql|bigquery|snowflake|redshift)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah menulis query SQL untuk ekstraksi dan analisis data?' },
+  { name: 'Python for Data', match: /\b(python|pandas|numpy|scikit)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah melakukan pemrosesan data, automasi, atau modeling dengan Python?' },
+  { name: 'ETL & Data Pipelines', match: /\b(etl|elt|airflow|dbt|data\s*pipeline)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah membangun atau mengelola pipeline data / ETL?' },
+  { name: 'A/B Testing & Statistics', match: /\b(a\/b\s*testing|hypothesis|regression|statistics|statistika)\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah merancang eksperimen A/B testing atau analisis statistik kuantitatif?' },
+
+  // --- Workforce Management & Operations ---
+  { name: 'Workforce Management (WFM)', match: /\b(workforce(\s*management)?|wfm)\b/i, category: 'Operations & WFM', prompt: 'Apakah kamu punya pengalaman dalam Workforce Management (WFM) atau headcount planning?' },
+  { name: 'Capacity Planning & Forecasting', match: /\b(capacity\s*planning|forecasting|call\s*volume|workload|proyeksi\s*beban)\b/i, category: 'Operations & WFM', prompt: 'Apakah kamu pernah melakukan peramalan beban kerja (forecasting) atau capacity planning?' },
+  { name: 'Scheduling & Shift Planning', match: /\b(scheduling|roster|adherence|rta|erlang|shift\s*planning)\b/i, category: 'Operations & WFM', prompt: 'Apakah kamu pernah merancang jadwal kerja, shift roster, atau memonitor real-time adherence?' },
+  { name: 'SLA & KPI Tracking', match: /\b(sla|service\s*level|kpi\s*tracking|turnaround\s*time|operational\s*metrics)\b/i, category: 'Operations & WFM', prompt: 'Apakah kamu pernah memonitor pemenuhan SLA dan metrik performa operasional?' },
+  { name: 'Revenue Operations / RevOps', match: /\b(revops|sales\s*operations?|revenue\s*operations?)\b/i, category: 'Operations & WFM', prompt: 'Apakah kamu punya pengalaman di Sales Operations, RevOps, atau CRM data analysis?' },
+
+  // --- Software Engineering & Backend ---
+  { name: 'PHP / Laravel', match: /\b(php|laravel)\b/i, category: 'Backend', prompt: 'Apakah kamu pernah membangun aplikasi web atau API menggunakan PHP atau Laravel?' },
+  { name: 'Golang', match: /\b(go|golang)\b/i, category: 'Backend', prompt: 'Apakah kamu pernah menulis service backend atau microservices dengan Golang?' },
+  { name: 'Node.js / Express', match: /\b(node(\.js)?|express|nestjs)\b/i, category: 'Backend', prompt: 'Apakah kamu pernah mengembangkan backend API berbasis Node.js atau Express?' },
+  { name: 'Java / Spring Boot', match: /\b(java|spring\s*boot)\b(?!script)/i, category: 'Backend', prompt: 'Apakah kamu pernah membangun sistem enterprise menggunakan Java atau Spring Boot?' },
+  { name: 'C# / .NET', match: /\b(\.net|c#|csharp)\b/i, category: 'Backend', prompt: 'Apakah kamu pernah bekerja dengan ekosistem C# atau .NET?' },
+  { name: 'REST API & Microservices', match: /\b(rest\s*api|microservices?|grpc)\b/i, category: 'Backend', prompt: 'Apakah kamu pernah merancang arsitektur REST API atau sistem microservices?' },
+
+  // --- Frontend & Mobile ---
+  { name: 'React / Next.js', match: /\b(react|next(\.js)?)\b/i, category: 'Frontend', prompt: 'Apakah kamu pernah membangun web app interaktif menggunakan React atau Next.js?' },
+  { name: 'Vue.js / Nuxt', match: /\b(vue|nuxt)\b/i, category: 'Frontend', prompt: 'Apakah kamu pernah mengerjakan project frontend dengan Vue.js atau Nuxt?' },
+  { name: 'TypeScript', match: /\btypescript\b/i, category: 'Frontend', prompt: 'Apakah kamu pernah menulis kode frontend atau backend dengan TypeScript?' },
+  { name: 'Flutter / Dart', match: /\b(flutter|dart)\b/i, category: 'Mobile', prompt: 'Apakah kamu pernah mengembangkan aplikasi mobile Android/iOS menggunakan Flutter?' },
+  { name: 'React Native', match: /\breact\s*native\b/i, category: 'Mobile', prompt: 'Apakah kamu punya pengalaman membangun mobile app dengan React Native?' },
+
+  // --- Cloud, DevOps & Infrastructure ---
+  { name: 'Docker & Containers', match: /\b(docker|containers?)\b/i, category: 'DevOps', prompt: 'Apakah kamu pernah membuat Dockerfile atau mengelola container aplikasi?' },
+  { name: 'Kubernetes', match: /\b(kubernetes|k8s)\b/i, category: 'DevOps', prompt: 'Apakah kamu pernah mengelola cluster atau orkestrasi container dengan Kubernetes?' },
+  { name: 'AWS Cloud', match: /\b(aws|amazon\s*web\s*services)\b/i, category: 'DevOps', prompt: 'Apakah kamu pernah menggunakan layanan AWS (EC2, S3, RDS, Lambda)?' },
+  { name: 'Google Cloud (GCP)', match: /\b(gcp|google\s*cloud)\b/i, category: 'DevOps', prompt: 'Apakah kamu pernah men-deploy aplikasi atau analitik di GCP?' },
+  { name: 'CI/CD Automation', match: /\b(ci\/cd|github\s*actions|jenkins|gitlab)\b/i, category: 'DevOps', prompt: 'Apakah kamu pernah setup pipeline otomatisasi CI/CD?' },
+
+  // --- AI, Product & Management ---
+  { name: 'Proyek AI / LLM', match: /\b(ai|llm|generative\s*ai|machine\s*learning|deep\s*learning)\b/i, category: 'AI & Data', prompt: 'Apakah kamu pernah mengimplementasikan model AI, LLM, atau machine learning dalam proyek?' },
+  { name: 'RAG & Vector Search', match: /\b(rag|vector|embeddings?|pinecone|qdrant|chroma)\b/i, category: 'AI & Data', prompt: 'Apakah kamu pernah membangun sistem Retrieval-Augmented Generation (RAG) atau Vector Search?' },
+  { name: 'Scrum / Agile Framework', match: /\b(agile|scrum|sprint)\b/i, category: 'Product & Mgmt', prompt: 'Apakah kamu terbiasa bekerja dalam siklus sprint Agile / Scrum?' },
+  { name: 'Jira / Project Tracking', match: /\b(jira|confluence|trello|asana)\b/i, category: 'Product & Mgmt', prompt: 'Apakah kamu aktif mengelola tugas dan backlog di Jira atau Confluence?' }
 ];
 
 function checkProfileHasSkill(profile, skillObj) {
@@ -1899,164 +1923,238 @@ function checkProfileHasSkill(profile, skillObj) {
 }
 
 function auditJobGaps(job, profile) {
-  if (!job || !job.description) return [];
+  if (!job || !job.description) return { gaps: [], matched: [] };
   const text = (job.title + ' ' + job.description);
   const gaps = [];
+  const matched = [];
 
   for (const item of KNOWN_SKILL_CATALOG) {
     if (item.match.test(text)) {
-      if (!checkProfileHasSkill(profile, item)) {
+      if (checkProfileHasSkill(profile, item)) {
+        matched.push(item);
+      } else {
         gaps.push(item);
       }
     }
   }
-  return gaps.slice(0, 4);
+  return { gaps: gaps.slice(0, 5), matched };
 }
 
 function renderGapAudit() {
   const box = $('#gap-audit-box');
-  const container = $('#gap-items-container');
-  if (!box || !container) return;
+  if (!box) return;
 
-  const gaps = auditJobGaps(state.job, state.profile);
-  if (!gaps || gaps.length === 0) {
+  if (!state.job) {
     box.classList.add('hidden');
     return;
   }
 
+  // Always show the audit box once a job is loaded!
   box.classList.remove('hidden');
-  container.innerHTML = '';
 
-  gaps.forEach((gap) => {
-    const el = document.createElement('div');
-    el.className = 'gap-item';
-    el.dataset.skill = gap.name;
-    el.innerHTML = `
-      <div class="gap-item-head">
-        <span class="gap-tag">BELUM ADA DI CV</span>
-        <span class="gap-skill-name">${esc(gap.name)}</span>
-      </div>
-      <div class="gap-item-prompt">
-        Apakah kamu pernah punya pengalaman memakai <b>${esc(gap.name)}</b> sebelumnya?
-      </div>
-      <div class="gap-item-btns">
-        <button type="button" class="btn small primary btn-gap-yes">Ya, Pernah</button>
-        <button type="button" class="btn small btn-gap-no">Belum Pernah</button>
-      </div>
+  const { gaps, matched } = auditJobGaps(state.job, state.profile);
 
-      <div class="gap-item-expand hidden">
-        <label class="gap-label">Tuliskan konteks singkat pengalamanmu:</label>
-        <div class="gap-input-row">
-          <input type="text" class="gap-ctx-input" placeholder="Contoh: Bikin REST API backend absensi pakai ${esc(gap.name)}...">
-          <button type="button" class="btn small primary btn-gap-format">Format ke STAR</button>
+  if (gaps.length > 0) {
+    box.className = 'card gap-card gap-warning';
+    box.innerHTML = `
+      <div class="flow-header">
+        <span class="step-num warning">!</span>
+        <span class="flow-title">Audit Kesiapan Lowongan</span>
+      </div>
+      <div class="gap-alert-banner">
+        <div class="gap-alert-top">
+          <span class="gap-badge-warn">⚠️ ${gaps.length} Kualifikasi Belum Ada di CV</span>
+        </div>
+        <p class="gap-alert-desc">
+          Recruiter dan filter ATS mencari kata kunci ini pada lowongan <b>${esc(state.job.title || 'posisi ini')}</b>. Jika kamu pernah menggunakannya, klik <b>Ya, Pernah</b> agar langsung diformat ke CV:
+        </p>
+      </div>
+      <div id="gap-items-container" class="gap-items-list"></div>
+    `;
+
+    const newContainer = box.querySelector('#gap-items-container');
+
+    gaps.forEach((gap) => {
+      const el = document.createElement('div');
+      el.className = 'gap-item';
+      el.dataset.skill = gap.name;
+      const promptText = gap.prompt || `Apakah kamu pernah punya pengalaman memakai <b>${esc(gap.name)}</b> sebelumnya?`;
+      
+      el.innerHTML = `
+        <div class="gap-item-head">
+          <span class="gap-tag">BELUM ADA DI CV</span>
+          <span class="gap-skill-name">${esc(gap.name)}</span>
+        </div>
+        <div class="gap-item-prompt">${promptText}</div>
+        <div class="gap-item-btns">
+          <button type="button" class="btn small primary btn-gap-yes">Ya, Pernah</button>
+          <button type="button" class="btn small btn-gap-no">Belum Pernah</button>
         </div>
 
-        <div class="gap-preview-box hidden">
-          <label class="gap-label">Draft Kalimat CV (Bisa kamu edit/revisi bebas):</label>
-          <textarea class="gap-bullet-textarea" rows="2"></textarea>
-          <div class="gap-action-row">
-            <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
-            <button type="button" class="btn small btn-gap-cancel">Batal</button>
+        <div class="gap-item-expand hidden">
+          <label class="gap-label">Tuliskan konteks singkat pengalamanmu:</label>
+          <div class="gap-input-row">
+            <input type="text" class="gap-ctx-input" placeholder="Contoh: Menggunakan ${esc(gap.name)} untuk analisis data dan reporting...">
+            <button type="button" class="btn small primary btn-gap-format">Format ke STAR</button>
+          </div>
+
+          <div class="gap-preview-box hidden">
+            <label class="gap-label">Draft Kalimat CV (Bisa kamu edit/revisi bebas):</label>
+            <textarea class="gap-bullet-textarea" rows="2"></textarea>
+            <div class="gap-action-row">
+              <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
+              <button type="button" class="btn small btn-gap-cancel">Batal</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="gap-item-saved hidden">
-        <span class="saved-icon">&#10003;</span>
-        <span class="saved-text">Pengalaman disimpan ke profil dan akan dipakai di CV ini.</span>
+        <div class="gap-item-saved hidden">
+          <span class="saved-icon">&#10003;</span>
+          <span class="saved-text">Pengalaman disimpan ke profil dan akan dipakai di CV ini.</span>
+        </div>
+      `;
+
+      const btnYes = el.querySelector('.btn-gap-yes');
+      const btnNo = el.querySelector('.btn-gap-no');
+      const expand = el.querySelector('.gap-item-expand');
+      const ctxInput = el.querySelector('.gap-ctx-input');
+      const btnFormat = el.querySelector('.btn-gap-format');
+      const prevBox = el.querySelector('.gap-preview-box');
+      const txtArea = el.querySelector('.gap-bullet-textarea');
+      const btnSave = el.querySelector('.btn-gap-save');
+      const btnCancel = el.querySelector('.btn-gap-cancel');
+      const savedMsg = el.querySelector('.gap-item-saved');
+
+      btnYes.addEventListener('click', () => {
+        expand.classList.remove('hidden');
+        btnYes.classList.add('hidden');
+        btnNo.classList.add('hidden');
+        ctxInput.focus();
+      });
+
+      btnNo.addEventListener('click', () => {
+        el.style.opacity = '0.45';
+        el.style.pointerEvents = 'none';
+        btnNo.textContent = 'Dilewati';
+      });
+
+      const formatBullet = () => {
+        const rawCtx = ctxInput.value.trim();
+        let draft = '';
+        if (rawCtx) {
+          draft = `Utilized ${gap.name} (${rawCtx}), optimizing operational delivery and cross-functional performance.`;
+        } else {
+          draft = `Applied ${gap.name} to execute core analytical and operational workflows, ensuring accuracy and reliable delivery.`;
+        }
+        txtArea.value = draft;
+        prevBox.classList.remove('hidden');
+        txtArea.focus();
+      };
+
+      btnFormat.addEventListener('click', formatBullet);
+      ctxInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') formatBullet();
+      });
+
+      btnCancel.addEventListener('click', () => {
+        expand.classList.add('hidden');
+        btnYes.classList.remove('hidden');
+        btnNo.classList.remove('hidden');
+      });
+
+      btnSave.addEventListener('click', async () => {
+        const finalBullet = txtArea.value.trim();
+        if (!finalBullet) return;
+
+        if (!state.profile) state.profile = {};
+        if (!state.profile.skills) state.profile.skills = {};
+        const cat = gap.category || 'Technical Skills';
+        if (!Array.isArray(state.profile.skills[cat])) state.profile.skills[cat] = [];
+        if (!state.profile.skills[cat].includes(gap.name)) {
+          state.profile.skills[cat].push(gap.name);
+        }
+
+        state.profile.memory = state.profile.memory || [];
+        state.profile.memory.push({
+          skill: gap.name,
+          context: ctxInput.value.trim(),
+          bullet: finalBullet,
+          ts: Date.now()
+        });
+
+        if (Array.isArray(state.profile.experience) && state.profile.experience.length > 0) {
+          state.profile.experience[0].bullets = state.profile.experience[0].bullets || [];
+          state.profile.experience[0].bullets.unshift(finalBullet);
+        } else {
+          state.profile.experience = state.profile.experience || [];
+          state.profile.experience.push({
+            company: 'Additional Experience',
+            role: 'Professional Project',
+            dates: 'Recent',
+            bullets: [finalBullet]
+          });
+        }
+
+        await chrome.storage.local.set({ profile: state.profile });
+        if (typeof updateProfileMeta === 'function') updateProfileMeta();
+
+        expand.classList.add('hidden');
+        savedMsg.classList.remove('hidden');
+        el.style.borderColor = 'rgba(74, 222, 128, 0.4)';
+        el.style.background = 'rgba(74, 222, 128, 0.08)';
+      });
+
+      newContainer.appendChild(el);
+    });
+
+  } else {
+    // 100% matched!
+    box.className = 'card gap-card gap-success';
+    const matchedChips = matched.slice(0, 8).map(m => `<span class="matched-chip">✓ ${esc(m.name)}</span>`).join(' ');
+    box.innerHTML = `
+      <div class="flow-header">
+        <span class="step-num check">&#10003;</span>
+        <span class="flow-title">Audit Kesiapan Lowongan</span>
+      </div>
+      <div class="gap-alert-banner success">
+        <div class="gap-alert-top">
+          <span class="gap-badge-ok">✓ Kesiapan 100% (Semua Skill Utama Terpenuhi)</span>
+        </div>
+        <p class="gap-alert-desc">
+          Profil kamu sudah mencakup seluruh keahlian utama yang terdeteksi di lowongan <b>${esc(state.job.title || 'posisi ini')}</b>. CV siap digenerate dengan skor kesiapan maksimal.
+        </p>
+        ${matchedChips ? `<div class="matched-chips-row">${matchedChips}</div>` : ''}
+      </div>
+      <div class="gap-custom-add-wrap" style="margin-top: 10px;">
+        <button type="button" class="btn small" id="btn-add-custom-skill">+ Tambah Pengalaman Khusus Lowongan Ini (Opsional)</button>
+        <div id="custom-skill-box" class="hidden" style="margin-top: 10px;">
+          <input type="text" id="custom-skill-input" placeholder="Tuliskan skill atau pencapaian tambahan..." style="margin-bottom: 6px;">
+          <button type="button" class="btn small primary" id="btn-save-custom-skill">Simpan ke CV</button>
+        </div>
       </div>
     `;
 
-    const btnYes = el.querySelector('.btn-gap-yes');
-    const btnNo = el.querySelector('.btn-gap-no');
-    const expand = el.querySelector('.gap-item-expand');
-    const ctxInput = el.querySelector('.gap-ctx-input');
-    const btnFormat = el.querySelector('.btn-gap-format');
-    const prevBox = el.querySelector('.gap-preview-box');
-    const txtArea = el.querySelector('.gap-bullet-textarea');
-    const btnSave = el.querySelector('.btn-gap-save');
-    const btnCancel = el.querySelector('.btn-gap-cancel');
-    const savedMsg = el.querySelector('.gap-item-saved');
+    const btnAddCustom = box.querySelector('#btn-add-custom-skill');
+    const customBox = box.querySelector('#custom-skill-box');
+    const customInput = box.querySelector('#custom-skill-input');
+    const btnSaveCustom = box.querySelector('#btn-save-custom-skill');
 
-    btnYes.addEventListener('click', () => {
-      expand.classList.remove('hidden');
-      btnYes.classList.add('hidden');
-      btnNo.classList.add('hidden');
-      ctxInput.focus();
-    });
-
-    btnNo.addEventListener('click', () => {
-      el.style.opacity = '0.45';
-      el.style.pointerEvents = 'none';
-      btnNo.textContent = 'Dilewati';
-    });
-
-    const formatBullet = () => {
-      const rawCtx = ctxInput.value.trim();
-      let draft = '';
-      if (rawCtx) {
-        draft = `Engineered practical implementation of ${gap.name} (${rawCtx}), optimizing workflow delivery and reliability.`;
-      } else {
-        draft = `Applied ${gap.name} in building core application features, ensuring technical reliability and clean code delivery.`;
-      }
-      txtArea.value = draft;
-      prevBox.classList.remove('hidden');
-      txtArea.focus();
-    };
-
-    btnFormat.addEventListener('click', formatBullet);
-    ctxInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') formatBullet();
-    });
-
-    btnCancel.addEventListener('click', () => {
-      expand.classList.add('hidden');
-      btnYes.classList.remove('hidden');
-      btnNo.classList.remove('hidden');
-    });
-
-    btnSave.addEventListener('click', async () => {
-      const finalBullet = txtArea.value.trim();
-      if (!finalBullet) return;
-
-      if (!state.profile) state.profile = {};
-      if (!state.profile.skills) state.profile.skills = {};
-      const cat = gap.category || 'Technical Skills';
-      if (!Array.isArray(state.profile.skills[cat])) state.profile.skills[cat] = [];
-      if (!state.profile.skills[cat].includes(gap.name)) {
-        state.profile.skills[cat].push(gap.name);
-      }
-
-      state.profile.memory = state.profile.memory || [];
-      state.profile.memory.push({
-        skill: gap.name,
-        context: ctxInput.value.trim(),
-        bullet: finalBullet,
-        ts: Date.now()
+    if (btnAddCustom && customBox) {
+      btnAddCustom.addEventListener('click', () => {
+        customBox.classList.toggle('hidden');
+        if (!customBox.classList.contains('hidden')) customInput.focus();
       });
-
-      if (Array.isArray(state.profile.experience) && state.profile.experience.length > 0) {
-        state.profile.experience[0].bullets = state.profile.experience[0].bullets || [];
-        state.profile.experience[0].bullets.unshift(finalBullet);
-      } else {
-        state.profile.experience = state.profile.experience || [];
-        state.profile.experience.push({
-          company: 'Additional Experience',
-          role: 'Technical Project',
-          dates: 'Recent',
-          bullets: [finalBullet]
-        });
-      }
-
-      await chrome.storage.local.set({ profile: state.profile });
-      if (typeof updateProfileMeta === 'function') updateProfileMeta();
-
-      expand.classList.add('hidden');
-      savedMsg.classList.remove('hidden');
-      el.style.borderColor = 'rgba(74, 222, 128, 0.35)';
-      el.style.background = 'rgba(74, 222, 128, 0.05)';
-    });
-
-    container.appendChild(el);
-  });
+      btnSaveCustom.addEventListener('click', async () => {
+        const val = customInput.value.trim();
+        if (!val) return;
+        if (!state.profile) state.profile = {};
+        if (Array.isArray(state.profile.experience) && state.profile.experience.length > 0) {
+          state.profile.experience[0].bullets = state.profile.experience[0].bullets || [];
+          state.profile.experience[0].bullets.unshift(val);
+        }
+        await chrome.storage.local.set({ profile: state.profile });
+        customBox.innerHTML = '<span style="color: var(--ok); font-size: 11.5px; font-weight: 600;">✓ Pengalaman tambahan berhasil ditambahkan ke CV.</span>';
+      });
+    }
+  }
 }
