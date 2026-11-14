@@ -1847,6 +1847,12 @@ document.addEventListener('DOMContentLoaded', init);
    GAP INTERVIEW & PROFILE MEMORY (Audit Kesiapan Interaktif)
    ================================================================ */
 
+// ================================================================
+// HUMAN-IN-THE-LOOP GROUNDING & ANTI-HALUSINASI AUDIT MODULE
+// Menggabungkan ekstraksi LLM ketat + katalog taksonomi lokal +
+// konfirmasi langsung user (Single Source of Truth).
+// ================================================================
+
 const KNOWN_SKILL_CATALOG = [
   // --- Data Analytics, BI & Engineering ---
   { name: 'Tableau', match: /\btableau\b/i, category: 'Data & Analytics', prompt: 'Apakah kamu pernah membuat visualisasi atau dashboard analitik menggunakan Tableau?' },
@@ -1896,7 +1902,7 @@ const KNOWN_SKILL_CATALOG = [
 
 function checkProfileHasSkill(profile, skillObj) {
   if (!profile) return false;
-  const target = skillObj.match;
+  const target = (skillObj instanceof RegExp) ? skillObj : (skillObj.match || new RegExp(escapeRegex(skillObj.name || String(skillObj)), 'i'));
   
   if (profile.skills) {
     for (const cat in profile.skills) {
@@ -1919,28 +1925,91 @@ function checkProfileHasSkill(profile, skillObj) {
       if (Array.isArray(p.bullets) && p.bullets.some(b => target.test(b))) return true;
     }
   }
+  if (profile.basics && profile.basics.summary && target.test(profile.basics.summary)) return true;
   return false;
 }
 
-function auditJobGaps(job, profile) {
-  if (!job || !job.description) return { gaps: [], matched: [] };
-  const text = (job.title + ' ' + job.description);
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 1. Ekstraksi Cepat & Keras via LLM Reader (Grounding tanpa halu)
+async function extractJobRequirementsGrounded(job) {
+  if (!job || !job.description) return null;
+
+  try {
+    const store = await chrome.storage.local.get(['apiKey', 'model']);
+    if (!store.apiKey) return null;
+
+    const sys = `You are a strict, objective job requirement reader.
+Read the job title and description. Extract 3 to 6 of the most critical hard skills, tools, frameworks, or domain qualifications that the employer EXPLICITLY requires.
+RULES:
+1. ONLY extract skills/tools directly written in the text.
+2. Never extrapolate, assume, or invent skills.
+3. Keep each skill name concise (e.g. "Tableau", "SQL", "Workforce Management", "Python").
+Return ONLY valid JSON in this exact structure:
+{"requirements": ["Skill 1", "Skill 2"]}`;
+
+    const userPrompt = `Job Title: ${job.title}\nCompany: ${job.company}\n\nJob Description:\n"""\n${job.description.slice(0, 3500)}\n"""\n\nReturn JSON only.`;
+
+    const res = await groqJson([
+      { role: 'system', content: sys },
+      { role: 'user', content: userPrompt }
+    ], store.model || 'qwen/qwen3.8-27b', { maxTokens: 800, temperature: 0.1 });
+
+    if (res && Array.isArray(res.requirements) && res.requirements.length > 0) {
+      return res.requirements.map(s => String(s).trim()).filter(s => s.length >= 2 && s.length <= 40);
+    }
+  } catch (err) {
+    console.warn('LLM requirement reader fallback to local catalog:', err);
+  }
+  return null;
+}
+
+// 2. Audit Kesiapan: Membandingkan Kualifikasi Lowongan vs Profile User
+async function performReadinessAudit(job, profile) {
+  if (!job) return { gaps: [], matched: [] };
+  const text = (job.title + ' ' + (job.description || ''));
+
+  // Coba ekstraksi via LLM Reader dulu (anti-kaku)
+  const aiRequirements = await extractJobRequirementsGrounded(job);
+
   const gaps = [];
   const matched = [];
 
-  for (const item of KNOWN_SKILL_CATALOG) {
-    if (item.match.test(text)) {
+  if (aiRequirements && aiRequirements.length > 0) {
+    for (const reqName of aiRequirements) {
+      const regex = new RegExp('\\b' + escapeRegex(reqName) + '\\b', 'i');
+      const item = {
+        name: reqName,
+        match: regex,
+        category: 'Job Requirement',
+        prompt: `Apakah kamu pernah punya pengalaman terkait ${reqName} sebelumnya?`
+      };
+
       if (checkProfileHasSkill(profile, item)) {
         matched.push(item);
       } else {
         gaps.push(item);
       }
     }
+  } else {
+    // Fallback ke taksonomi katalog lokal (instan 0ms)
+    for (const item of KNOWN_SKILL_CATALOG) {
+      if (item.match.test(text)) {
+        if (checkProfileHasSkill(profile, item)) {
+          matched.push(item);
+        } else {
+          gaps.push(item);
+        }
+      }
+    }
   }
+
   return { gaps: gaps.slice(0, 5), matched };
 }
 
-function renderGapAudit() {
+async function renderGapAudit() {
   const box = $('#gap-audit-box');
   if (!box) return;
 
@@ -1949,10 +2018,20 @@ function renderGapAudit() {
     return;
   }
 
-  // Always show the audit box once a job is loaded!
+  // Tampilkan loading subtle saat analisis kualifikasi sedang berjalan
   box.classList.remove('hidden');
+  box.className = 'card gap-card';
+  box.innerHTML = `
+    <div class="flow-header">
+      <span class="step-num">!</span>
+      <span class="flow-title">Audit Kesiapan Lowongan</span>
+    </div>
+    <div style="font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; padding: 6px 0;">
+      <span>Menganalisis kualifikasi lowongan terhadap profil CV kamu...</span>
+    </div>
+  `;
 
-  const { gaps, matched } = auditJobGaps(state.job, state.profile);
+  const { gaps, matched } = await performReadinessAudit(state.job, state.profile);
 
   if (gaps.length > 0) {
     box.className = 'card gap-card gap-warning';
@@ -1966,7 +2045,7 @@ function renderGapAudit() {
           <span class="gap-badge-warn">⚠️ ${gaps.length} Kualifikasi Belum Ada di CV</span>
         </div>
         <p class="gap-alert-desc">
-          Recruiter dan filter ATS mencari kata kunci ini pada lowongan <b>${esc(state.job.title || 'posisi ini')}</b>. Jika kamu pernah menggunakannya, klik <b>Ya, Pernah</b> agar langsung diformat ke CV:
+          Recruiter dan filter ATS mencari kata kunci ini pada lowongan <b>${esc(state.job.title || 'posisi ini')}</b>. Jika kamu sebenarnya pernah menggunakannya, klik <b>Ya, Pernah</b> agar diverifikasi dan masuk ke CV:
         </p>
       </div>
       <div id="gap-items-container" class="gap-items-list"></div>
@@ -1999,7 +2078,7 @@ function renderGapAudit() {
           </div>
 
           <div class="gap-preview-box hidden">
-            <label class="gap-label">Draft Kalimat CV (Bisa kamu edit/revisi bebas):</label>
+            <label class="gap-label">Draft Kalimat CV (Bebas kamu edit / koreksi agar faktanya akurat):</label>
             <textarea class="gap-bullet-textarea" rows="2"></textarea>
             <div class="gap-action-row">
               <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
@@ -2010,7 +2089,7 @@ function renderGapAudit() {
 
         <div class="gap-item-saved hidden">
           <span class="saved-icon">&#10003;</span>
-          <span class="saved-text">Pengalaman disimpan ke profil dan akan dipakai di CV ini.</span>
+          <span class="saved-text">Pengalaman diverifikasi, disimpan ke profil, dan akan dipakai di CV ini.</span>
         </div>
       `;
 
@@ -2033,9 +2112,9 @@ function renderGapAudit() {
       });
 
       btnNo.addEventListener('click', () => {
-        el.style.opacity = '0.45';
+        el.style.opacity = '0.5';
         el.style.pointerEvents = 'none';
-        btnNo.textContent = 'Dilewati';
+        btnNo.textContent = 'Dilewati (Tetap Jujur)';
       });
 
       const formatBullet = () => {
