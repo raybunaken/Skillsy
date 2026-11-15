@@ -2277,12 +2277,11 @@ details summary:hover {
    ROBUST NON-COLLIDING SAVED & SKIPPED STATUS STYLES
    ================================================================ */
 .gap-item-saved {
-  margin-top: 8px !important;
-  background: rgba(74, 222, 128, 0.06) !important;
-  border: 1px solid rgba(74, 222, 128, 0.25) !important;
-  border-radius: 6px !important;
-  padding: 8px 10px !important;
-  display: block !important;
+  margin-top: 8px;
+  background: rgba(74, 222, 128, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
 }
 
 .gap-saved-content, .gap-skipped-content {
@@ -2303,12 +2302,11 @@ details summary:hover {
 }
 
 .gap-item-skipped {
-  margin-top: 6px !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 6px !important;
-  padding: 6px 10px !important;
-  display: block !important;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 6px 10px;
 }
 
 .skipped-label {
@@ -2360,4 +2358,16 @@ details summary:hover {
 
 .gap-optional-summary:hover {
   color: var(--accent) !important;
+}
+
+/* Guarantee that any element with .hidden is never displayed */
+.hidden,
+.gap-item-saved.hidden,
+.gap-item-skipped.hidden,
+.gap-item-expand.hidden,
+.gap-preview-box.hidden,
+.gap-item-btns.hidden,
+.gap-item-saved[class*="hidden"],
+.gap-item-skipped[class*="hidden"] {
+  display: none !important;
 }
