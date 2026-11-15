@@ -1941,16 +1941,16 @@ async function extractJobRequirementsGrounded(job) {
     const store = await chrome.storage.local.get(['apiKey', 'model']);
     if (!store.apiKey) return null;
 
-    const sys = `You are a strict, objective job requirement reader.
-Read the job title and description. Extract 3 to 6 of the most critical hard skills, tools, frameworks, or domain qualifications that the employer EXPLICITLY requires.
+    const sys = `You are a pragmatic, highly selective job requirement analyst for 1-page CV optimization.
+Analyze this job posting. Identify ONLY the TOP 2 (at most 3) most decisive, dealbreaker technical tools or domain criteria that are central to the role title.
 RULES:
-1. ONLY extract skills/tools directly written in the text.
-2. Never extrapolate, assume, or invent skills.
-3. Keep each skill name concise (e.g. "Tableau", "SQL", "Workforce Management", "Python").
+1. Ignore secondary, generic, soft skills, or nice-to-have tools.
+2. Select only 2 (maximum 3) core requirements that define the core technical stack of this role.
+3. Keep names concise (e.g. "Azure Data Services", "Apache Spark", "Kubernetes").
 Return ONLY valid JSON in this exact structure:
 {"requirements": ["Skill 1", "Skill 2"]}`;
 
-    const userPrompt = `Job Title: ${job.title}\nCompany: ${job.company}\n\nJob Description:\n"""\n${job.description.slice(0, 3500)}\n"""\n\nReturn JSON only.`;
+    const userPrompt = `Job Title: ${job.title}\nCompany: ${job.company}\n\nJob Description:\n"""\n${job.description.slice(0, 3500)}\n"""\n\nReturn JSON with top 2-3 decisive requirements only.`;
 
     const res = await groqJson([
       { role: 'system', content: sys },
@@ -2006,7 +2006,11 @@ async function performReadinessAudit(job, profile) {
     }
   }
 
-  return { gaps: gaps.slice(0, 5), matched };
+  // Prioritaskan maksimal 2 gap utama agar CV tetap padat 1 halaman A4
+  const primaryGaps = gaps.slice(0, 2);
+  const optionalGaps = gaps.slice(2, 4);
+
+  return { gaps: primaryGaps, optionalGaps, matched };
 }
 
 async function renderGapAudit() {
@@ -2027,138 +2031,117 @@ async function renderGapAudit() {
       <span class="flow-title">Audit Kesiapan Lowongan</span>
     </div>
     <div style="font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; padding: 6px 0;">
-      <span>Menganalisis kualifikasi lowongan terhadap profil CV kamu...</span>
+      <span>Menganalisis kualifikasi kunci lowongan terhadap profil CV kamu...</span>
     </div>
   `;
 
-  const { gaps, matched } = await performReadinessAudit(state.job, state.profile);
+  const { gaps, optionalGaps, matched } = await performReadinessAudit(state.job, state.profile);
 
   const svgWarn = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
   const svgCheck = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-  if (gaps.length > 0) {
-    box.className = 'card gap-card gap-warning';
-    box.innerHTML = `
-      <div class="flow-header">
-        <span class="step-num warning">!</span>
-        <span class="flow-title">Audit Kesiapan Lowongan</span>
+  function createGapElement(gap) {
+    const el = document.createElement('div');
+    el.className = 'gap-item';
+    el.dataset.skill = gap.name;
+    const promptText = gap.prompt || `Apakah kamu pernah punya pengalaman memakai <b>${esc(gap.name)}</b> sebelumnya?`;
+    
+    el.innerHTML = `
+      <div class="gap-item-head">
+        <span class="gap-tag">BELUM ADA DI CV</span>
+        <span class="gap-skill-name">${esc(gap.name)}</span>
       </div>
-      <div class="gap-alert-banner">
-        <div class="gap-alert-top">
-          <span class="gap-badge-warn">${svgWarn}${gaps.length} Kualifikasi Belum Ada di CV</span>
+      <div class="gap-item-prompt">${promptText}</div>
+      
+      <div class="gap-item-btns">
+        <button type="button" class="btn small primary btn-gap-yes">Ya, Pernah</button>
+        <button type="button" class="btn small btn-gap-no">Belum Pernah</button>
+      </div>
+
+      <div class="gap-item-skipped hidden">
+        <div class="gap-skipped-content">
+          <span class="skipped-label">Dilewati (tidak masuk ke CV)</span>
+          <button type="button" class="btn-undo-action btn-gap-undo-skip">Batalkan</button>
         </div>
-        <p class="gap-alert-desc">
-          Recruiter dan filter ATS mencari kata kunci ini pada lowongan <b>${esc(state.job.title || 'posisi ini')}</b>. Jika kamu sebenarnya pernah menggunakannya, klik <b>Ya, Pernah</b> agar diverifikasi dan masuk ke CV:
-        </p>
       </div>
-      <div id="gap-items-container" class="gap-items-list"></div>
+
+      <div class="gap-item-expand hidden">
+        <label class="gap-label">Tuliskan konteks singkat pengalamanmu:</label>
+        <div class="gap-input-row">
+          <input type="text" class="gap-ctx-input" placeholder="Contoh: Menggunakan ${esc(gap.name)} untuk analisis data dan reporting...">
+          <button type="button" class="btn small primary btn-gap-format">Format ke STAR</button>
+        </div>
+
+        <div class="gap-preview-box hidden">
+          <label class="gap-label">Draft Kalimat CV (Bebas kamu edit / koreksi agar faktanya akurat):</label>
+          <textarea class="gap-bullet-textarea" rows="2"></textarea>
+          <div class="gap-action-row">
+            <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
+            <button type="button" class="btn small btn-gap-cancel">Batal</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="gap-item-saved hidden">
+        <div class="gap-saved-content">
+          <div class="gap-saved-status">
+            ${svgCheck}
+            <span>Tersimpan ke draf CV</span>
+          </div>
+          <button type="button" class="btn-undo-action btn-gap-undo-save">Batalkan</button>
+        </div>
+      </div>
     `;
 
-    const newContainer = box.querySelector('#gap-items-container');
+    const btnsRow = el.querySelector('.gap-item-btns');
+    const btnYes = el.querySelector('.btn-gap-yes');
+    const btnNo = el.querySelector('.btn-gap-no');
+    const skippedBox = el.querySelector('.gap-item-skipped');
+    const btnUndoSkip = el.querySelector('.btn-gap-undo-skip');
+    const expand = el.querySelector('.gap-item-expand');
+    const ctxInput = el.querySelector('.gap-ctx-input');
+    const btnFormat = el.querySelector('.btn-gap-format');
+    const prevBox = el.querySelector('.gap-preview-box');
+    const txtArea = el.querySelector('.gap-bullet-textarea');
+    const btnSave = el.querySelector('.btn-gap-save');
+    const btnCancel = el.querySelector('.btn-gap-cancel');
+    const savedBox = el.querySelector('.gap-item-saved');
+    const btnUndoSave = el.querySelector('.btn-gap-undo-save');
 
-    gaps.forEach((gap) => {
-      const el = document.createElement('div');
-      el.className = 'gap-item';
-      el.dataset.skill = gap.name;
-      const promptText = gap.prompt || `Apakah kamu pernah punya pengalaman memakai <b>${esc(gap.name)}</b> sebelumnya?`;
-      
-      el.innerHTML = `
-        <div class="gap-item-head">
-          <span class="gap-tag">BELUM ADA DI CV</span>
-          <span class="gap-skill-name">${esc(gap.name)}</span>
-        </div>
-        <div class="gap-item-prompt">${promptText}</div>
-        
-        <div class="gap-item-btns">
-          <button type="button" class="btn small primary btn-gap-yes">Ya, Pernah</button>
-          <button type="button" class="btn small btn-gap-no">Belum Pernah</button>
-        </div>
+    let savedBulletRef = '';
 
-        <div class="gap-item-skipped hidden" style="padding: 6px 0; font-size: 12px; color: var(--ink-2); display: flex; align-items: center; justify-content: space-between;">
-          <span>Status: Dilewati (tidak masuk ke CV)</span>
-          <button type="button" class="btn small link btn-gap-undo-skip" style="color: var(--accent); cursor: pointer; text-decoration: underline;">Batalkan</button>
-        </div>
+    btnYes.addEventListener('click', () => {
+      btnsRow.classList.add('hidden');
+      skippedBox.classList.add('hidden');
+      expand.classList.remove('hidden');
+      ctxInput.focus();
+    });
 
-        <div class="gap-item-expand hidden">
-          <label class="gap-label">Tuliskan konteks singkat pengalamanmu:</label>
-          <div class="gap-input-row">
-            <input type="text" class="gap-ctx-input" placeholder="Contoh: Menggunakan ${esc(gap.name)} untuk analisis data dan reporting...">
-            <button type="button" class="btn small primary btn-gap-format">Format ke STAR</button>
-          </div>
+    btnNo.addEventListener('click', () => {
+      btnsRow.classList.add('hidden');
+      expand.classList.add('hidden');
+      skippedBox.classList.remove('hidden');
+      el.style.opacity = '0.7';
+    });
 
-          <div class="gap-preview-box hidden">
-            <label class="gap-label">Draft Kalimat CV (Bebas kamu edit / koreksi agar faktanya akurat):</label>
-            <textarea class="gap-bullet-textarea" rows="2"></textarea>
-            <div class="gap-action-row">
-              <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
-              <button type="button" class="btn small btn-gap-cancel">Batal</button>
-            </div>
-          </div>
-        </div>
+    btnUndoSkip.addEventListener('click', () => {
+      skippedBox.classList.add('hidden');
+      btnsRow.classList.remove('hidden');
+      el.style.opacity = '1';
+    });
 
-        <div class="gap-item-saved hidden" style="padding: 6px 0;">
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <span class="saved-text" style="display: flex; align-items: center; gap: 6px; color: var(--ok); font-size: 11.5px; font-weight: 600;">
-              ${svgCheck}Tersimpan ke profil &amp; dipakai di CV ini
-            </span>
-            <button type="button" class="btn small link btn-gap-undo-save" style="color: #f87171; font-size: 11px; cursor: pointer; text-decoration: underline;">Batalkan / Hapus</button>
-          </div>
-        </div>
-      `;
+    const formatBullet = async () => {
+      const rawCtx = ctxInput.value.trim();
+      btnFormat.disabled = true;
+      const origBtnText = btnFormat.textContent;
+      btnFormat.textContent = 'Menyusun...';
 
-      const btnsRow = el.querySelector('.gap-item-btns');
-      const btnYes = el.querySelector('.btn-gap-yes');
-      const btnNo = el.querySelector('.btn-gap-no');
-      const skippedBox = el.querySelector('.gap-item-skipped');
-      const btnUndoSkip = el.querySelector('.btn-gap-undo-skip');
-      const expand = el.querySelector('.gap-item-expand');
-      const ctxInput = el.querySelector('.gap-ctx-input');
-      const btnFormat = el.querySelector('.btn-gap-format');
-      const prevBox = el.querySelector('.gap-preview-box');
-      const txtArea = el.querySelector('.gap-bullet-textarea');
-      const btnSave = el.querySelector('.btn-gap-save');
-      const btnCancel = el.querySelector('.btn-gap-cancel');
-      const savedBox = el.querySelector('.gap-item-saved');
-      const btnUndoSave = el.querySelector('.btn-gap-undo-save');
+      let draft = '';
 
-      let savedBulletRef = '';
-
-      // Alur: Klik Ya, Pernah
-      btnYes.addEventListener('click', () => {
-        btnsRow.classList.add('hidden');
-        skippedBox.classList.add('hidden');
-        expand.classList.remove('hidden');
-        ctxInput.focus();
-      });
-
-      // Alur: Klik Belum Pernah (Reversible)
-      btnNo.addEventListener('click', () => {
-        btnsRow.classList.add('hidden');
-        expand.classList.add('hidden');
-        skippedBox.classList.remove('hidden');
-        el.style.opacity = '0.7';
-      });
-
-      // Tombol Batalkan Skip jika ternyata user berubah pikiran
-      btnUndoSkip.addEventListener('click', () => {
-        skippedBox.classList.add('hidden');
-        btnsRow.classList.remove('hidden');
-        el.style.opacity = '1';
-      });
-
-      // Format ke STAR via LLM Reader / Converter cerdas
-      const formatBullet = async () => {
-        const rawCtx = ctxInput.value.trim();
-        btnFormat.disabled = true;
-        const origBtnText = btnFormat.textContent;
-        btnFormat.textContent = 'Menyusun...';
-
-        let draft = '';
-
-        try {
-          const store = await chrome.storage.local.get(['apiKey', 'model']);
-          if (store.apiKey) {
-            const sys = `You are an expert career resume writer.
+      try {
+        const store = await chrome.storage.local.get(['apiKey', 'model']);
+        if (store.apiKey) {
+          const sys = `You are an expert career resume writer.
 The candidate provides rough notes about their experience with a specific skill/tool.
 Transform their raw note into ONE clear, impactful, professional STAR-format resume bullet point.
 RULES:
@@ -2169,124 +2152,156 @@ RULES:
 Return ONLY valid JSON in this exact structure:
 {"bullet": "..."}`;
 
-            const prompt = `Target Skill: ${gap.name}\nCandidate's notes: "${rawCtx || 'Applied in real-world projects'}"\nJob Title: ${state.job ? state.job.title : 'Technical Role'}`;
+          const prompt = `Target Skill: ${gap.name}\nCandidate's notes: "${rawCtx || 'Applied in real-world projects'}"\nJob Title: ${state.job ? state.job.title : 'Technical Role'}`;
 
-            const res = await groqJson([
-              { role: 'system', content: sys },
-              { role: 'user', content: prompt }
-            ], store.model || 'qwen/qwen3.8-27b', { maxTokens: 400, temperature: 0.2 });
+          const res = await groqJson([
+            { role: 'system', content: sys },
+            { role: 'user', content: prompt }
+          ], store.model || 'qwen/qwen3.8-27b', { maxTokens: 400, temperature: 0.2 });
 
-            if (res && res.bullet) {
-              draft = res.bullet.trim();
-            }
-          }
-        } catch (e) {
-          console.warn('AI STAR formatting fallback:', e);
-        }
-
-        // Fallback jika tanpa key atau offline (tetap bersih & tanpa tanda kurung mentah)
-        if (!draft) {
-          if (rawCtx) {
-            draft = `Applied ${gap.name} across practical project workflows, delivering reliable technical implementation and system stability.`;
-          } else {
-            draft = `Utilized ${gap.name} to execute core engineering workflows, ensuring technical reliability and clean code delivery.`;
+          if (res && res.bullet) {
+            draft = res.bullet.trim();
           }
         }
+      } catch (e) {
+        console.warn('AI STAR formatting fallback:', e);
+      }
 
-        txtArea.value = draft;
-        prevBox.classList.remove('hidden');
-        btnFormat.disabled = false;
-        btnFormat.textContent = origBtnText;
-        txtArea.focus();
-      };
-
-      btnFormat.addEventListener('click', formatBullet);
-      ctxInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') formatBullet();
-      });
-
-      // Tombol Batal saat mengisi
-      btnCancel.addEventListener('click', () => {
-        expand.classList.add('hidden');
-        prevBox.classList.add('hidden');
-        btnsRow.classList.remove('hidden');
-      });
-
-      // Simpan ke Profil & Gunakan di CV
-      btnSave.addEventListener('click', async () => {
-        const finalBullet = txtArea.value.trim();
-        if (!finalBullet) return;
-
-        savedBulletRef = finalBullet;
-
-        if (!state.profile) state.profile = {};
-        if (!state.profile.skills) state.profile.skills = {};
-        const cat = gap.category || 'Technical Skills';
-        if (!Array.isArray(state.profile.skills[cat])) state.profile.skills[cat] = [];
-        if (!state.profile.skills[cat].includes(gap.name)) {
-          state.profile.skills[cat].push(gap.name);
-        }
-
-        state.profile.memory = state.profile.memory || [];
-        state.profile.memory.push({
-          skill: gap.name,
-          context: ctxInput.value.trim(),
-          bullet: finalBullet,
-          ts: Date.now()
-        });
-
-        if (Array.isArray(state.profile.experience) && state.profile.experience.length > 0) {
-          state.profile.experience[0].bullets = state.profile.experience[0].bullets || [];
-          state.profile.experience[0].bullets.unshift(finalBullet);
+      if (!draft) {
+        if (rawCtx) {
+          draft = `Applied ${gap.name} across practical project workflows, delivering reliable technical implementation and system stability.`;
         } else {
-          state.profile.experience = state.profile.experience || [];
-          state.profile.experience.push({
-            company: 'Additional Experience',
-            role: 'Professional Project',
-            dates: 'Recent',
-            bullets: [finalBullet]
+          draft = `Utilized ${gap.name} to execute core engineering workflows, ensuring technical reliability and clean code delivery.`;
+        }
+      }
+
+      txtArea.value = draft;
+      prevBox.classList.remove('hidden');
+      btnFormat.disabled = false;
+      btnFormat.textContent = origBtnText;
+      txtArea.focus();
+    };
+
+    btnFormat.addEventListener('click', formatBullet);
+    ctxInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') formatBullet();
+    });
+
+    btnCancel.addEventListener('click', () => {
+      expand.classList.add('hidden');
+      prevBox.classList.add('hidden');
+      btnsRow.classList.remove('hidden');
+    });
+
+    btnSave.addEventListener('click', async () => {
+      const finalBullet = txtArea.value.trim();
+      if (!finalBullet) return;
+
+      savedBulletRef = finalBullet;
+
+      if (!state.profile) state.profile = {};
+      if (!state.profile.skills) state.profile.skills = {};
+      const cat = gap.category || 'Technical Skills';
+      if (!Array.isArray(state.profile.skills[cat])) state.profile.skills[cat] = [];
+      if (!state.profile.skills[cat].includes(gap.name)) {
+        state.profile.skills[cat].push(gap.name);
+      }
+
+      state.profile.memory = state.profile.memory || [];
+      state.profile.memory.push({
+        skill: gap.name,
+        context: ctxInput.value.trim(),
+        bullet: finalBullet,
+        ts: Date.now()
+      });
+
+      if (Array.isArray(state.profile.experience) && state.profile.experience.length > 0) {
+        state.profile.experience[0].bullets = state.profile.experience[0].bullets || [];
+        state.profile.experience[0].bullets.unshift(finalBullet);
+      } else {
+        state.profile.experience = state.profile.experience || [];
+        state.profile.experience.push({
+          company: 'Additional Experience',
+          role: 'Professional Project',
+          dates: 'Recent',
+          bullets: [finalBullet]
+        });
+      }
+
+      await chrome.storage.local.set({ profile: state.profile });
+      if (typeof updateProfileMeta === 'function') updateProfileMeta();
+
+      expand.classList.add('hidden');
+      savedBox.classList.remove('hidden');
+      el.style.borderColor = 'rgba(74, 222, 128, 0.4)';
+      el.style.background = 'rgba(74, 222, 128, 0.08)';
+    });
+
+    btnUndoSave.addEventListener('click', async () => {
+      if (!savedBulletRef) return;
+
+      if (state.profile) {
+        if (Array.isArray(state.profile.experience)) {
+          state.profile.experience.forEach(exp => {
+            if (Array.isArray(exp.bullets)) {
+              exp.bullets = exp.bullets.filter(b => b !== savedBulletRef);
+            }
           });
         }
-
+        if (Array.isArray(state.profile.memory)) {
+          state.profile.memory = state.profile.memory.filter(m => m.bullet !== savedBulletRef);
+        }
         await chrome.storage.local.set({ profile: state.profile });
         if (typeof updateProfileMeta === 'function') updateProfileMeta();
+      }
 
-        expand.classList.add('hidden');
-        savedBox.classList.remove('hidden');
-        el.style.borderColor = 'rgba(74, 222, 128, 0.4)';
-        el.style.background = 'rgba(74, 222, 128, 0.08)';
-      });
-
-      // Tombol Batalkan / Hapus jika sudah tersimpan tapi user berubah pikiran
-      btnUndoSave.addEventListener('click', async () => {
-        if (!savedBulletRef) return;
-
-        if (state.profile) {
-          // Hapus dari experience bullets
-          if (Array.isArray(state.profile.experience)) {
-            state.profile.experience.forEach(exp => {
-              if (Array.isArray(exp.bullets)) {
-                exp.bullets = exp.bullets.filter(b => b !== savedBulletRef);
-              }
-            });
-          }
-          // Hapus dari memory
-          if (Array.isArray(state.profile.memory)) {
-            state.profile.memory = state.profile.memory.filter(m => m.bullet !== savedBulletRef);
-          }
-          await chrome.storage.local.set({ profile: state.profile });
-          if (typeof updateProfileMeta === 'function') updateProfileMeta();
-        }
-
-        savedBulletRef = '';
-        savedBox.classList.add('hidden');
-        btnsRow.classList.remove('hidden');
-        el.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        el.style.background = '#181b24';
-      });
-
-      newContainer.appendChild(el);
+      savedBulletRef = '';
+      savedBox.classList.add('hidden');
+      btnsRow.classList.remove('hidden');
+      el.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      el.style.background = '#181b24';
     });
+
+    return el;
+  }
+
+  if (gaps.length > 0) {
+    box.className = 'card gap-card gap-warning';
+    box.innerHTML = `
+      <div class="flow-header">
+        <span class="step-num warning">!</span>
+        <span class="flow-title">Audit Kesiapan Lowongan</span>
+      </div>
+      <div class="gap-alert-banner">
+        <div class="gap-alert-top">
+          <span class="gap-badge-warn">${svgWarn}${gaps.length} Kualifikasi Kunci Belum Ada di CV</span>
+        </div>
+        <p class="gap-alert-desc">
+          Fokus pada 1–2 kualifikasi kunci agar CV tetap padat 1 halaman A4. Jika kamu pernah memakainya, klik <b>Ya, Pernah</b> untuk memverifikasi:
+        </p>
+      </div>
+      <div id="gap-items-container" class="gap-items-list"></div>
+      ${optionalGaps && optionalGaps.length > 0 ? `
+        <details class="gap-optional-wrap" style="margin-top: 10px;">
+          <summary class="gap-optional-summary">+ Lihat ${optionalGaps.length} kualifikasi opsional lainnya</summary>
+          <div id="gap-optional-container" class="gap-items-list" style="margin-top: 8px;"></div>
+        </details>
+      ` : ''}
+    `;
+
+    const newContainer = box.querySelector('#gap-items-container');
+    gaps.forEach((gap) => {
+      newContainer.appendChild(createGapElement(gap));
+    });
+
+    if (optionalGaps && optionalGaps.length > 0) {
+      const optContainer = box.querySelector('#gap-optional-container');
+      if (optContainer) {
+        optionalGaps.forEach((gap) => {
+          optContainer.appendChild(createGapElement(gap));
+        });
+      }
+    }
 
   } else {
     // 100% matched!
@@ -2339,3 +2354,5 @@ Return ONLY valid JSON in this exact structure:
     }
   }
 }
+
+
