@@ -13,17 +13,19 @@
 // "About the job", deteksi judul lewat tipografi, dan fallback judul dokumen.
 
 (() => {
-  // Guard anti injeksi ganda: content script bisa ter-inject dua kali
-  // (deklarasi statis di manifest + injeksi manual dari sidepanel saat self-healing).
-  if (window.__jobfeastLoaded) return;
-  window.__jobfeastLoaded = true;
+  // Self-healing guard: perbarui listener jika diinjeksi ulang setelah extension reload
+  if (window.__skillsyRuntimeId === chrome.runtime.id && window.__skillsyLoaded) return;
+  window.__skillsyRuntimeId = chrome.runtime.id;
+  window.__skillsyLoaded = true;
 
   const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const TITLES = [
     'h1.t-24',
+    '.job-details-jobs-unified-top-card__job-title h1',
     'h1.job-details-jobs-unified-top-card__job-title',
+    '.job-details-jobs-unified-top-card__job-title',
     'h2.job-details-jobs-unified-top-card__job-title',
     'h1.top-card-layout__title',
     'h1.topcard__title',
@@ -32,14 +34,17 @@
     '[role="heading"][aria-level="1"]',
     '[class*="job-details"] h1',
     '[class*="job-details"] h2',
+    'h1',
   ];
   const COMPANIES = [
-    'a.topcard__org-name-link',
-    'a[data-tracking-control-name*="company_name"]',
     '.job-details-jobs-unified-top-card__company-name a',
     '.job-details-jobs-unified-top-card__company-name',
+    '.jobs-unified-top-card__company-name a',
     '.jobs-unified-top-card__company-name',
+    'a.topcard__org-name-link',
+    'a[data-tracking-control-name*="company_name"]',
     '[class*="primary-description"] a[href*="/company"]',
+    '[class*="company-name"] a',
     '[class*="company-name"]',
     'a[href*="/company/"]',
   ];
@@ -48,14 +53,15 @@
     '.jobs-unified-top-card__primary-description',
     '[class*="top-card"] [class*="company"]',
     '.job-details-jobs-unified-top-card__primary-description-container',
+    '.job-details-jobs-unified-top-card__job-insight',
   ];
   const DESCS = [
     '#job-details',
+    '.jobs-description__content',
+    '.jobs-description-content__text',
     '.jobs-box__html-content',
     '[class*="jobs-box__html-content"]',
-    '.jobs-description-content__text',
     '[class*="jobs-description-content"]',
-    '.jobs-description__content',
     '[class*="jobs-description__container"]',
     '.show-more-less-html__markup',
     '.show-more-less-html',
@@ -63,7 +69,7 @@
     '[class*="jobs-description"]',
     'section[class*="description"]',
     'article[class*="description"]',
-    'article',
+    '.jobs-description',
   ];
   const SEE_MORE = [
     '.jobs-description__footer-button',
@@ -240,8 +246,12 @@
     return '';
   }
 
-  // Panel detail lowongan bisa di-render di container mana pun tergantung layout.
+  // Panel detail lowongan bisa di-render di container mana pun tergantung layout (termasuk split search layout).
   const detailsRoot = () =>
+    document.querySelector('.scaffold-layout__detail') ||
+    document.querySelector('.jobs-search__job-details--container') ||
+    document.querySelector('.jobs-search__job-details') ||
+    document.querySelector('.job-view-layout') ||
     document.querySelector('[class*="job-details-jobs-unified-top-card"]') ||
     document.querySelector('[class*="job-details"]') ||
     document.querySelector('main') ||
@@ -254,12 +264,45 @@
     clickSeeMore(ctx);
 
     const r = detailsRoot();
-    let title = clean(firstVisibleIn(r, TITLES)?.textContent) || clean(document.querySelector('h1')?.textContent);
-    let companyEl = firstVisibleIn(r, COMPANIES);
-    let metaEl = firstVisibleIn(r, METAS);
-    let descEl = firstVisibleIn(document, DESCS);
+    
+    // 1. Ambil Judul Pekerjaan (prioritaskan container panel detail)
+    let title = clean(firstVisibleIn(r, TITLES)?.textContent);
+    if (!title && r !== document) {
+      const h1 = r.querySelector('h1') || r.querySelector('[class*="job-title"]');
+      if (h1 && isVisible(h1)) title = clean(h1.textContent);
+    }
+    if (!title) {
+      title = clean(firstVisibleIn(document, TITLES)?.textContent) || clean(document.querySelector('h1')?.textContent);
+    }
 
-    // turun ke strategi dalam hanya kalau light DOM tidak lengkap
+    // 2. Ambil Nama Perusahaan
+    let companyEl = firstVisibleIn(r, COMPANIES);
+    if (!companyEl && r !== document) {
+      companyEl = r.querySelector('.job-details-jobs-unified-top-card__company-name a') ||
+                  r.querySelector('.job-details-jobs-unified-top-card__company-name') ||
+                  r.querySelector('a[href*="/company/"]') ||
+                  r.querySelector('[class*="company-name"]');
+    }
+    if (!companyEl) companyEl = firstVisibleIn(document, COMPANIES);
+
+    // 3. Ambil Metadata (Lokasi / Workplace)
+    let metaEl = firstVisibleIn(r, METAS) || firstVisibleIn(document, METAS);
+
+    // 4. Ambil Deskripsi Pekerjaan
+    let descEl = firstVisibleIn(r, DESCS) || firstVisibleIn(document, DESCS);
+
+    // Jika belum ditemukan di light DOM standar, coba cari container teks terbesar di dalam detail panel
+    if (!descEl && r !== document) {
+      for (const sel of ['#job-details', '.jobs-description__content', '.jobs-box__html-content', '[class*="description"]', 'article']) {
+        const found = r.querySelector(sel);
+        if (found && clean(found.innerText || textOf(found)).length >= 80) {
+          descEl = found;
+          break;
+        }
+      }
+    }
+
+    // Turun ke strategi dalam jika masih belum lengkap
     if (!title || !descEl) {
       if (!title) title = clean(findDeep(TITLES, ctx)?.textContent) || clean(findDeep(['h1'], ctx)?.textContent);
       if (!companyEl) companyEl = findDeep(COMPANIES, ctx);
@@ -330,28 +373,26 @@
   }
 
   async function extractJobWithRetry() {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       const r = extractJob();
       if (r.ok) return r;
-      await sleep(500);
+      await sleep(300);
     }
     return extractJob();
   }
 
-  // Protokol multi-frame: halaman LinkedIn baru bisa merender detail lowongan di
-  // dalam iframe yang tidak bisa dimasuki dari frame atas. Dengan all_frames,
-  // setiap frame punya instance sendiri. Aturannya: frame yang BERHASIL menjawab
-  // GET_JOB; frame yang gagal diam supaya tidak menimbal jawaban sukses dari
-  // frame lain. GET_JOB_DIAG selalu menjawab (untuk diagnostik, dari frame atas).
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === 'GET_JOB') {
       extractJobWithRetry()
-        .then((r) => { if (r.ok) sendResponse(r); })
-        .catch(() => {});
+        .then((r) => {
+          sendResponse(r);
+        })
+        .catch((e) => {
+          sendResponse({ ok: false, error: 'Ekstraksi error: ' + (e && e.message || String(e)) });
+        });
       return true;
     }
     if (msg.type === 'GET_JOB_DIAG') {
-      // tanpa retry penuh: cukup satu pass + survey, biar responsnya cepat
       try {
         sendResponse(extractJob());
       } catch (e) {

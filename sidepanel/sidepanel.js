@@ -98,19 +98,20 @@ async function grabJob() {
       throw new Error('Tab aktif bukan halaman LinkedIn. Buka dulu lowongan di LinkedIn, lalu coba lagi.');
     }
 
-    // GET_JOB dibroadcast ke semua frame: frame yang berhasil mengekstrak yang
-    // menjawab. Frame atas sendirian tidak cukup karena LinkedIn baru bisa
-    // merender detail lowongan di dalam iframe.
     let res = null;
     try {
-      res = await withTimeout(chrome.tabs.sendMessage(tab.id, { type: 'GET_JOB' }), 15000, null);
+      res = await withTimeout(chrome.tabs.sendMessage(tab.id, { type: 'GET_JOB' }), 5000, null);
     } catch (_) {
-      // Content script belum ada (umum setelah extension di-reload di tab lama).
-      // Self-healing: suntik ulang ke semua frame, lalu coba lagi.
+      // Content script belum terhubung (biasanya setelah extension di-reload di tab lama)
+    }
+
+    // Self-healing jika content script lama mati / terputus: suntik ulang dan coba lagi
+    if (!res || !res.ok) {
       showStatus(st, 'Menghubungkan ulang Skillsy ke tab ini...');
       try {
         await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, files: ['content/linkedin.js'] });
-        res = await withTimeout(chrome.tabs.sendMessage(tab.id, { type: 'GET_JOB' }), 15000, null);
+        await new Promise(r => setTimeout(r, 250));
+        res = await withTimeout(chrome.tabs.sendMessage(tab.id, { type: 'GET_JOB' }), 5000, null);
       } catch (_) {}
     }
 
@@ -125,19 +126,12 @@ async function grabJob() {
       return;
     }
 
-    // Tidak ada frame yang berhasil: ambil diagnostik dari frame atas (selalu menjawab).
-    let diag = null;
-    try {
-      diag = await withTimeout(chrome.tabs.sendMessage(tab.id, { type: 'GET_JOB_DIAG' }, { frameId: 0 }), 8000, null);
-    } catch (_) {}
-    const detail = diag && diag.error ? diag.error : 'Gagal membaca lowongan dari semua frame halaman ini.';
+    const detail = (res && res.error) || 'Belum bisa membaca detail lowongan dari tab ini. Silakan refresh halaman LinkedIn (tekan F5 di tab LinkedIn), lalu klik tombol ini lagi.';
     throw new Error(detail);
   } catch (e) {
     let msg = e.message || String(e);
-    if (msg.includes('Could not establish connection')) {
-      msg = 'Skillsy masih belum bisa terhubung ke tab ini. Muat ulang halaman LinkedIn (tekan F5 di tab LinkedIn), tunggu halaman terbuka penuh, lalu coba lagi.';
-    } else if (msg.toLowerCase().includes('cannot access') || msg.toLowerCase().includes('permission')) {
-      msg = 'Tidak punya izin membaca tab ini. Pastikan tab LinkedIn yang terbuka adalah halaman lowongan, lalu coba lagi.';
+    if (msg.includes('Could not establish connection') || msg.includes('Receiving end does not exist')) {
+      msg = 'Koneksi ke tab terputus setelah extension di-reload. Silakan refresh halaman LinkedIn (tekan F5 di tab LinkedIn), lalu klik tombol ini lagi.';
     }
     showStatus(st, msg, 'error');
   }
