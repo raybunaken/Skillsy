@@ -120,14 +120,8 @@ async function grabJob() {
       const btnGen = $('#btn-generate');
       btnGen.textContent = `Buat CV + Cover Letter untuk ${res.job.company}`;
       btnGen.classList.add('ready');
-      showStatus(st, `Lowongan siap: ${res.job.title} di ${res.job.company}. Cek audit kesiapan di bawah:`, 'ok');
-      showStatus(st, `Lowongan siap: ${res.job.title} di ${res.job.company}. Cek audit kesiapan di bawah:`, 'ok');
-      const gapBox = $('#gap-audit-box');
-      if (gapBox) {
-        gapBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        btnGen.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      showStatus(st, `Lowongan siap: ${res.job.title} di ${res.job.company}. Klik tombol di bawah untuk membuat dokumen.`, 'ok');
+      btnGen.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       return;
     }
 
@@ -1941,24 +1935,25 @@ async function extractJobRequirementsGrounded(job) {
     const store = await chrome.storage.local.get(['apiKey', 'model']);
     if (!store.apiKey) return null;
 
-    const sys = `You are a pragmatic, highly selective job requirement analyst for 1-page CV optimization.
-Analyze this job posting. Identify ONLY the TOP 2 (at most 3) most decisive, dealbreaker technical tools or domain criteria that are central to the role title.
-RULES:
-1. Ignore secondary, generic, soft skills, or nice-to-have tools.
-2. Select only 2 (maximum 3) core requirements that define the core technical stack of this role.
-3. Keep names concise (e.g. "Azure Data Services", "Apache Spark", "Kubernetes").
+    const sys = `You are an elite, highly selective technical requirement analyzer for 1-page CV optimization.
+Analyze this job description and extract ONLY the TOP 1 or 2 (MAXIMUM 2) critical technical tools, platforms, or systems that are central to this specific role title.
+STRICT FILTER RULES:
+1. ONLY concrete tools/technologies/platforms (e.g. "Apache Airflow", "Azure Blob", "Kafka", "Kubernetes", "Snowflake", "Databricks").
+2. DO NOT extract broad technical concepts or responsibilities (e.g. "ETL/ELT", "Data Modeling", "Pipeline Design", "Data Warehousing"). These conceptual duties are already automatically integrated by the CV writing engine.
+3. DO NOT extract general qualities, soft skills, degree requirements, or years of experience (e.g. "Bachelor degree", "Agile", "Communication", "3+ years experience").
+4. Return maximum 2 items. If none or only 1 concrete tool is essential, return 1 or 2 items.
 Return ONLY valid JSON in this exact structure:
-{"requirements": ["Skill 1", "Skill 2"]}`;
+{"requirements": ["Tool 1", "Tool 2"]}`;
 
-    const userPrompt = `Job Title: ${job.title}\nCompany: ${job.company}\n\nJob Description:\n"""\n${job.description.slice(0, 3500)}\n"""\n\nReturn JSON with top 2-3 decisive requirements only.`;
+    const userPrompt = `Role: ${job.title}\nCompany: ${job.company}\n\nJob Description:\n"""\n${job.description.slice(0, 3500)}\n"""\n\nReturn JSON with top 1-2 decisive concrete tools only.`;
 
     const res = await groqJson([
       { role: 'system', content: sys },
       { role: 'user', content: userPrompt }
-    ], store.model || 'qwen/qwen3.8-27b', { maxTokens: 800, temperature: 0.1 });
+    ], store.model || 'qwen/qwen3.8-27b', { maxTokens: 400, temperature: 0.1 });
 
     if (res && Array.isArray(res.requirements) && res.requirements.length > 0) {
-      return res.requirements.map(s => String(s).trim()).filter(s => s.length >= 2 && s.length <= 40);
+      return res.requirements.map(s => String(s).trim()).filter(s => s.length >= 2 && s.length <= 40).slice(0, 2);
     }
   } catch (err) {
     console.warn('LLM requirement reader fallback to local catalog:', err);
@@ -1966,7 +1961,6 @@ Return ONLY valid JSON in this exact structure:
   return null;
 }
 
-// 2. Audit Kesiapan: Membandingkan Kualifikasi Lowongan vs Profile User
 async function performReadinessAudit(job, profile) {
   if (!job) return { gaps: [], matched: [] };
   const text = (job.title + ' ' + (job.description || ''));
@@ -2022,23 +2016,22 @@ async function renderGapAudit() {
     return;
   }
 
-  // Tampilkan loading subtle saat analisis kualifikasi sedang berjalan
+  // Tampilkan bar ringkas default saat menghitung
   box.classList.remove('hidden');
-  box.className = 'card gap-card';
+  box.className = 'gap-bar-card';
   box.innerHTML = `
-    <div class="flow-header">
-      <span class="step-num">!</span>
-      <span class="flow-title">Audit Kesiapan Lowongan</span>
-    </div>
-    <div style="font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; padding: 6px 0;">
-      <span>Menganalisis kualifikasi kunci lowongan terhadap profil CV kamu...</span>
+    <div class="gap-bar-header">
+      <div class="gap-bar-title">
+        <svg class="gap-bar-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--ink-2);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size: 11.5px; color: var(--ink-2);">Mengecek kualifikasi kunci lowongan...</span>
+      </div>
     </div>
   `;
 
   const { gaps, optionalGaps, matched } = await performReadinessAudit(state.job, state.profile);
 
-  const svgWarn = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
-  const svgCheck = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const svgWarn = `<svg class="gap-bar-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  const svgCheck = `<svg class="gap-bar-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
   function createGapElement(gap) {
     const el = document.createElement('div');
@@ -2068,15 +2061,15 @@ async function renderGapAudit() {
       <div class="gap-item-expand hidden">
         <label class="gap-label">Tuliskan konteks singkat pengalamanmu:</label>
         <div class="gap-input-row">
-          <input type="text" class="gap-ctx-input" placeholder="Contoh: Menggunakan ${esc(gap.name)} untuk analisis data dan reporting...">
+          <input type="text" class="gap-ctx-input" placeholder="Contoh: Menggunakan ${esc(gap.name)} untuk data pipeline...">
           <button type="button" class="btn small primary btn-gap-format">Format ke STAR</button>
         </div>
 
         <div class="gap-preview-box hidden">
-          <label class="gap-label">Draft Kalimat CV (Bebas kamu edit / koreksi agar faktanya akurat):</label>
+          <label class="gap-label">Draft Kalimat CV (Bebas kamu edit / koreksi):</label>
           <textarea class="gap-bullet-textarea" rows="2"></textarea>
           <div class="gap-action-row">
-            <button type="button" class="btn small primary btn-gap-save">Simpan ke Profil &amp; Gunakan</button>
+            <button type="button" class="btn small primary btn-gap-save">Simpan ke Draf CV</button>
             <button type="button" class="btn small btn-gap-cancel">Batal</button>
           </div>
         </div>
@@ -2113,6 +2106,7 @@ async function renderGapAudit() {
     btnYes.addEventListener('click', () => {
       btnsRow.classList.add('hidden');
       skippedBox.classList.add('hidden');
+      savedBox.classList.add('hidden');
       expand.classList.remove('hidden');
       ctxInput.focus();
     });
@@ -2120,6 +2114,7 @@ async function renderGapAudit() {
     btnNo.addEventListener('click', () => {
       btnsRow.classList.add('hidden');
       expand.classList.add('hidden');
+      savedBox.classList.add('hidden');
       skippedBox.classList.remove('hidden');
       el.style.opacity = '0.7';
     });
@@ -2152,7 +2147,7 @@ RULES:
 Return ONLY valid JSON in this exact structure:
 {"bullet": "..."}`;
 
-          const prompt = `Target Skill: ${gap.name}\nCandidate's notes: "${rawCtx || 'Applied in real-world projects'}"\nJob Title: ${state.job ? state.job.title : 'Technical Role'}`;
+          const prompt = `Target Skill: ${gap.name}\nCandidate notes: "${rawCtx || 'Applied in production projects'}"\nJob Title: ${state.job ? state.job.title : 'Technical Role'}`;
 
           const res = await groqJson([
             { role: 'system', content: sys },
@@ -2259,35 +2254,54 @@ Return ONLY valid JSON in this exact structure:
       savedBox.classList.add('hidden');
       btnsRow.classList.remove('hidden');
       el.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-      el.style.background = '#181b24';
+      el.style.background = 'rgba(255, 255, 255, 0.03)';
     });
 
     return el;
   }
 
   if (gaps.length > 0) {
-    box.className = 'card gap-card gap-warning';
+    box.className = 'gap-bar-card gap-warning';
     box.innerHTML = `
-      <div class="flow-header">
-        <span class="step-num warning">!</span>
-        <span class="flow-title">Audit Kesiapan Lowongan</span>
-      </div>
-      <div class="gap-alert-banner">
-        <div class="gap-alert-top">
-          <span class="gap-badge-warn">${svgWarn}${gaps.length} Kualifikasi Kunci Belum Ada di CV</span>
+      <div class="gap-bar-header" id="gap-bar-toggle">
+        <div class="gap-bar-title">
+          ${svgWarn}
+          <span>Kesiapan: Terdeteksi ${gaps.length} kualifikasi belum di CV</span>
+          <span class="gap-opt-pill">Opsional</span>
         </div>
-        <p class="gap-alert-desc">
-          Fokus pada 1–2 kualifikasi kunci agar CV tetap padat 1 halaman A4. Jika kamu pernah memakainya, klik <b>Ya, Pernah</b> untuk memverifikasi:
-        </p>
+        <button type="button" class="gap-bar-btn" id="gap-bar-toggle-btn">Sesuaikan Skill ▾</button>
       </div>
-      <div id="gap-items-container" class="gap-items-list"></div>
-      ${optionalGaps && optionalGaps.length > 0 ? `
-        <details class="gap-optional-wrap" style="margin-top: 10px;">
-          <summary class="gap-optional-summary">+ Lihat ${optionalGaps.length} kualifikasi opsional lainnya</summary>
-          <div id="gap-optional-container" class="gap-items-list" style="margin-top: 8px;"></div>
-        </details>
-      ` : ''}
+
+      <div class="gap-bar-body hidden" id="gap-bar-body">
+        <p class="gap-bar-note">
+          Fokus pada 1–2 kualifikasi kunci agar CV tetap padat 1 halaman A4. Jika kamu pernah memakainya, klik <b>Ya, Pernah</b> untuk memverifikasi dan menyertakannya ke CV:
+        </p>
+        <div id="gap-items-container" class="gap-items-list"></div>
+        ${optionalGaps && optionalGaps.length > 0 ? `
+          <details class="gap-optional-wrap">
+            <summary class="gap-optional-summary">+ Lihat ${optionalGaps.length} kualifikasi opsional lainnya</summary>
+            <div id="gap-optional-container" class="gap-items-list" style="margin-top: 8px;"></div>
+          </details>
+        ` : ''}
+      </div>
     `;
+
+    const toggleHeader = box.querySelector('#gap-bar-toggle');
+    const toggleBtn = box.querySelector('#gap-bar-toggle-btn');
+    const barBody = box.querySelector('#gap-bar-body');
+
+    const toggleOpen = () => {
+      const isHidden = barBody.classList.contains('hidden');
+      barBody.classList.toggle('hidden', !isHidden);
+      toggleBtn.textContent = isHidden ? 'Tutup ▴' : 'Sesuaikan Skill ▾';
+    };
+
+    if (toggleHeader && toggleBtn) {
+      toggleHeader.addEventListener('click', (e) => {
+        if (e.target !== toggleBtn) toggleOpen();
+      });
+      toggleBtn.addEventListener('click', toggleOpen);
+    }
 
     const newContainer = box.querySelector('#gap-items-container');
     gaps.forEach((gap) => {
@@ -2305,30 +2319,49 @@ Return ONLY valid JSON in this exact structure:
 
   } else {
     // 100% matched!
-    box.className = 'card gap-card gap-success';
-    const matchedChips = matched.slice(0, 8).map(m => `<span class="matched-chip">${svgCheck}${esc(m.name)}</span>`).join(' ');
+    box.className = 'gap-bar-card gap-success';
+    const matchedChips = matched.slice(0, 6).map(m => `<span class="matched-chip">${svgCheck}${esc(m.name)}</span>`).join(' ');
     box.innerHTML = `
-      <div class="flow-header">
-        <span class="step-num check">${svgCheck}</span>
-        <span class="flow-title">Audit Kesiapan Lowongan</span>
-      </div>
-      <div class="gap-alert-banner success">
-        <div class="gap-alert-top">
-          <span class="gap-badge-ok">${svgCheck}Kesiapan 100% (Semua Skill Utama Terpenuhi)</span>
+      <div class="gap-bar-header" id="gap-bar-toggle">
+        <div class="gap-bar-title">
+          ${svgCheck}
+          <span>Kesiapan 100%: Semua kualifikasi utama cocok</span>
+          <span class="gap-opt-pill" style="color: var(--ok); border-color: rgba(74, 222, 128, 0.25);">Match</span>
         </div>
-        <p class="gap-alert-desc">
-          Profil kamu sudah mencakup seluruh keahlian utama yang terdeteksi di lowongan <b>${esc(state.job.title || 'posisi ini')}</b>. CV siap digenerate dengan skor kesiapan maksimal.
+        <button type="button" class="gap-bar-btn" id="gap-bar-toggle-btn">Detail ▾</button>
+      </div>
+
+      <div class="gap-bar-body hidden" id="gap-bar-body">
+        <p class="gap-bar-note">
+          Profil kamu sudah mencakup seluruh keahlian utama yang terdeteksi di lowongan <b>${esc(state.job.title || 'posisi ini')}</b>.
         </p>
         ${matchedChips ? `<div class="matched-chips-row">${matchedChips}</div>` : ''}
-      </div>
-      <div class="gap-custom-add-wrap" style="margin-top: 10px;">
-        <button type="button" class="btn small" id="btn-add-custom-skill">+ Tambah Pengalaman Khusus Lowongan Ini (Opsional)</button>
-        <div id="custom-skill-box" class="hidden" style="margin-top: 10px;">
-          <input type="text" id="custom-skill-input" placeholder="Tuliskan skill atau pencapaian tambahan..." style="margin-bottom: 6px;">
-          <button type="button" class="btn small primary" id="btn-save-custom-skill">Simpan ke CV</button>
+        <div class="gap-custom-add-wrap" style="margin-top: 10px;">
+          <button type="button" class="btn small" id="btn-add-custom-skill">+ Tambah Pengalaman Khusus Lowongan Ini (Opsional)</button>
+          <div id="custom-skill-box" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="custom-skill-input" placeholder="Tuliskan skill atau pencapaian tambahan..." style="margin-bottom: 6px;">
+            <button type="button" class="btn small primary" id="btn-save-custom-skill">Simpan ke CV</button>
+          </div>
         </div>
       </div>
     `;
+
+    const toggleHeader = box.querySelector('#gap-bar-toggle');
+    const toggleBtn = box.querySelector('#gap-bar-toggle-btn');
+    const barBody = box.querySelector('#gap-bar-body');
+
+    const toggleOpen = () => {
+      const isHidden = barBody.classList.contains('hidden');
+      barBody.classList.toggle('hidden', !isHidden);
+      toggleBtn.textContent = isHidden ? 'Tutup ▴' : 'Detail ▾';
+    };
+
+    if (toggleHeader && toggleBtn) {
+      toggleHeader.addEventListener('click', (e) => {
+        if (e.target !== toggleBtn) toggleOpen();
+      });
+      toggleBtn.addEventListener('click', toggleOpen);
+    }
 
     const btnAddCustom = box.querySelector('#btn-add-custom-skill');
     const customBox = box.querySelector('#custom-skill-box');
@@ -2354,5 +2387,3 @@ Return ONLY valid JSON in this exact structure:
     }
   }
 }
-
-
